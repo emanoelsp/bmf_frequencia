@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/auseAuth'; 
 import { useRouter } from 'next/navigation';
 import { firestore } from '../../lib/firebaseConfig'; 
-import { collection, getDocs, doc, getDoc, addDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import LogOut from '@/app/components/logout';
 
 interface Aluno {
