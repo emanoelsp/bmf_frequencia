@@ -163,8 +163,12 @@ export default function RelatorioTurmas() {
 
       {/* Tabela de Turmas Cadastradas */}
       <div className="bg-white border-8 p-6 rounded-lg shadow-lg mb-8">
-        <h2 className="text-xl font-semibold text-black mb-4">Turmas Cadastradas:</h2>
-        <table className="w-full border-t border-b">
+      <h2 className="text-3xl font-semibold text-gray-700 mb-4">Relatório de turmas cadastradas</h2>
+      <hr className='border-4'></hr>
+
+      <h2 className="text-lg font-semibold text-gray-700 mb-4">Lista de escolas e turmas: </h2>
+
+      <table className="w-full border-t border-b">
           <thead>
             <tr>
               <th className="text-left text-black py-2">Nome da Escola</th>
@@ -228,8 +232,10 @@ export default function RelatorioTurmas() {
 
       {/* Seção de Listagem de Alunos */}
       <div className="bg-white border-8 p-6 rounded-lg shadow-lg">
-        <h1 className="text-xl font-semibold text-black mb-4">Alunos Cadastrados:</h1>
-        <div className="mb-8">
+      <h2 className="text-3xl font-semibold text-gray-700 mb-4">Alunos cadastrados</h2>
+      <hr className='border-4'></hr>
+
+      <div className="mb-8">
           <label className="block text-gray-600 mb-2" htmlFor="turma">Selecione a Turma:</label>
           <select
             id="turma"
@@ -245,7 +251,10 @@ export default function RelatorioTurmas() {
             ))}
           </select>
         </div>
+        <hr className='border-4'></hr>
+
         <h2 className="text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
+
         <table className="w-full border-t border-b">
           <thead>
             <tr>

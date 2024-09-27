@@ -1,11 +1,12 @@
-'use client';
+'use client'
 
+// src/app/frequencia/relatorio/page.tsx
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../hooks/auseAuth'; 
+import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import { firestore } from '../../lib/firebaseConfig'; 
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import LogOut from '../../components/logout'
+import LogOut from '../../components/logout';
 
 interface Aluno {
   id: string;
@@ -39,26 +40,26 @@ export default function Relatorios() {
     if (loading) return; 
     if (!user) {
       router.push('/login'); 
+    } else {
+      fetchTurmas();
     }
-
-    const fetchTurmas = async () => {
-      const turmaCollectionRef = collection(firestore, 'turmas');
-      const turmaDocs = await getDocs(turmaCollectionRef);
-      const turmasData = turmaDocs.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Turma[];
-      setTurmas(turmasData);
-    };
-
-    fetchTurmas();
   }, [loading, user, router]);
+
+  const fetchTurmas = async () => {
+    const turmaCollectionRef = collection(firestore, 'turmas');
+    const turmaDocs = await getDocs(turmaCollectionRef);
+    const turmasData = turmaDocs.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Turma[];
+    setTurmas(turmasData);
+  };
 
   const handleTurmaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const turmaId = e.target.value;
     setTurmaSelecionada(turmaId);
-    setAlunos([]); // Limpa alunos ao trocar a turma
-    setFrequencias([]); // Limpa frequências
+    setAlunos([]);
+    setFrequencias([]);
 
     if (turmaId) {
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
@@ -73,15 +74,14 @@ export default function Relatorios() {
 
       const frequenciasData = await fetchFrequencias(turmaId);
       setFrequencias(frequenciasData);
-
-      // Atualiza as frequências de cada aluno
+      
       const updatedAlunos = alunosData.map(aluno => {
         const alunoFrequencias = frequenciasData.reduce((acc, frequencia) => {
-          const chaveAluno = `${aluno.nome} ${aluno.sobrenome}`; // Combina nome e sobrenome
-          acc[frequencia.data] = frequencia.presencas[chaveAluno] || false; // Busca a presença
+          const chaveAluno = `${aluno.nome} ${aluno.sobrenome}`;
+          acc[frequencia.data] = frequencia.presencas[chaveAluno] || false;
           return acc;
         }, {} as { [key: string]: boolean });
-        
+
         return { ...aluno, frequencias: alunoFrequencias };
       });
 
@@ -96,9 +96,9 @@ export default function Relatorios() {
     
     const frequenciasData = frequenciaDocs.docs.map(doc => {
       const data = doc.data();
-      const presencas = data.alunos.reduce((acc: { [key: string]: boolean }, aluno: any) => {
-        const chaveAluno = `${aluno.nome} ${aluno.sobrenome}`; // Combina nome e sobrenome
-        acc[chaveAluno] = aluno.presenca === 'V'; // Marca presença se "V"
+      const presencas = data.alunos.reduce((acc: { [key: string]: boolean }, aluno: { nome: string; sobrenome: string; presenca: string }) => {
+        const chaveAluno = `${aluno.nome} ${aluno.sobrenome}`;
+        acc[chaveAluno] = aluno.presenca === 'V';
         return acc;
       }, {});
       return {
@@ -110,27 +110,21 @@ export default function Relatorios() {
     return frequenciasData;
   };
 
-
-
   if (loading) return <p>Loading...</p>; 
 
   return (
-    <div className="min-h-screen bg-gray-100 border-8 p-8">
+    <div className="min-h-screen bg-gray-100 p-8">
       <LogOut />
       <hr />
       <h1 className="text-3xl font-bold text-center text-black mb-8">
         Relatório de Frequência
       </h1>
-
       <div className="bg-white border-8 p-6 rounded-lg shadow-lg max-w-4xl mx-auto mb-8">
-        <h2 className="text-xl font-semibold text-black mb-4">
-          Selecionar Turma
-        </h2>
+        <h2 className="text-3xl font-semibold text-gray-700 mb-4">Selecionar Turma</h2>
+        <hr className='border-4'></hr>
         <form>
           <div className="mb-4">
-            <label htmlFor="turma" className="block text-black mb-2">
-              Turma
-            </label>
+            <label htmlFor="turma" className="mt-2 block text-black mb-2">Turma:</label>
             <select
               id="turma"
               value={turmaSelecionada}
@@ -147,12 +141,9 @@ export default function Relatorios() {
           </div>
         </form>
       </div>
-
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-6xl mx-auto border-8">
-        <h2 className="text-xl font-semibold text-black mb-4">
-          Relatório de Frequência
-        </h2>
-        
+        <h2 className="text-3xl font-semibold text-gray-700 mb-4">Relatório de Frequência</h2>
+        <hr className='border-4 mb-3'></hr>
         <table className="min-w-full table-auto">
           <thead>
             <tr className="bg-gray-200">

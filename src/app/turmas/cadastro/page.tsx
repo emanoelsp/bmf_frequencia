@@ -7,15 +7,6 @@ import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
 
-interface Aluno {
-  id: string;
-  nome: string;
-  sobrenome: string;
-  anoCursando: number;
-  turmaId: string;
-  nomeTurma: string; // Novo campo para o nome da turma
-  codigoTurma: string; // Novo campo para o código da turma
-}
 
 interface Turma {
   id: string;
@@ -128,7 +119,9 @@ export default function Cadastro() {
 
       <div className="bg-white border-8 p-6 rounded-lg shadow-lg mx-auto mb-8">
         <h2 className="text-3xl font-semibold text-gray-700 mb-4">Cadastro de turmas</h2>
-        <h4 className="text-1xl font-semibold text-gray-700 mb-4">Preencha os dados da escola abaixo:</h4>
+        <hr className='border-4'></hr>
+
+        <h4 className="mt-2 text-1xl font-semibold text-gray-700 mb-4">Preencha os dados da escola abaixo:</h4>
         <form onSubmit={handleSubmitTurma} className="grid grid-cols-1 gap-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
@@ -173,7 +166,9 @@ export default function Cadastro() {
 
       <div className="bg-white border-8 p-6 rounded-lg shadow-lg mx-auto">
         <h2 className="text-3xl font-semibold text-gray-700 mb-4">Cadastro de Alunos</h2>
-        <h4 className="text-1xl font-semibold text-gray-700 mb-4">Preencha os dados dos alunos abaixo:</h4>
+        <hr className='border-4'></hr>
+
+        <h4 className="mt-2 text-1xl font-semibold text-gray-700 mb-4">Preencha os dados dos alunos abaixo:</h4>
 
         <form onSubmit={handleSubmitAluno}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

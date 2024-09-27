@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/auseAuth'; 
+import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
-import { firestore } from '../../lib/firebaseConfig'; 
+import { firestore } from '../../lib/firebaseConfig';
 import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import LogOut from '@/app/components/logout';
 
@@ -25,7 +25,7 @@ interface Turma {
 export default function RelatorioTurmasFrequencia() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  
+
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmaSelecionada, setTurmaSelecionada] = useState<string>('');
@@ -54,7 +54,7 @@ export default function RelatorioTurmasFrequencia() {
   const handleTurmaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const turmaId = e.target.value;
     setTurmaSelecionada(turmaId);
-    setPresenca({}); 
+    setPresenca({});
 
     if (turmaId) {
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
@@ -104,7 +104,7 @@ export default function RelatorioTurmasFrequencia() {
   const handleCheckboxChange = (id: string) => {
     setPresenca(prev => ({
       ...prev,
-      [id]: !prev[id], 
+      [id]: !prev[id],
     }));
   };
 
@@ -118,14 +118,18 @@ export default function RelatorioTurmasFrequencia() {
 
       <div className="bg-white border-8 p-6 rounded-lg shadow-lg">
         <div className="mb-8">
-          <h1 className="text-xl font-semibold text-black mb-4">Selecione a turma:</h1>
+          <h2 className="text-3xl font-semibold text-gray-700 mb-4">Registro de frequência</h2>
+          <hr className='border-4'></hr>
+
+          <h2 className="mt-2 text-1lg font-semibold text-gray-700 mb-4">Informe a turma:</h2>
+
           <select
             id="turma"
             value={turmaSelecionada}
             onChange={handleTurmaChange}
             className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Selecione uma turma</option>
+            <option value="">Selecionar uma turma</option>
             {turmas.map((turma) => (
               <option key={turma.id} value={turma.id} className="text-black">
                 {turma.nomeEscola} - {turma.anoTurma} - {turma.codigoTurma}
@@ -135,7 +139,9 @@ export default function RelatorioTurmasFrequencia() {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-black mb-4">Informe a data:</h2>
+
+          <h2 className="text-1lg font-semibold text-gray-700 mb-4">Informe a data:</h2>
+
           <input
             type="date"
             id="data"
@@ -144,8 +150,9 @@ export default function RelatorioTurmasFrequencia() {
             onChange={(e) => setData(e.target.value)}
           />
         </div>
+        <hr className='border-4'></hr>
 
-        <h2 className="text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
+        <h2 className="mt-2 text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
         <table className="w-full border-t border-b">
           <thead>
             <tr>
@@ -160,18 +167,18 @@ export default function RelatorioTurmasFrequencia() {
                 <td className="py-2 text-black">{aluno.nome} {aluno.sobrenome}</td>
                 <td className="py-2 text-black">{aluno.anoCursando}</td>
                 <td className="py-2">
-                  <input 
-                    type="checkbox" 
-                    className="w-6 h-6" 
-                    checked={presenca[aluno.id] || false} 
-                    onChange={() => handleCheckboxChange(aluno.id)} 
+                  <input
+                    type="checkbox"
+                    className="w-6 h-6"
+                    checked={presenca[aluno.id] || false}
+                    onChange={() => handleCheckboxChange(aluno.id)}
                   />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        
+
         <div className="mt-6 text-center">
           <button
             className="bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-600 focus:outline-none focus:bg-blue-600 transition duration-150"
