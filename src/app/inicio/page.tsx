@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/auseAuth'; // Corrigi o caminho do hook de autenticação
 import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth'; // Importa a função de logout
-import { auth, firestore } from '../lib/firebaseConfig'; // Importa a configuração do Firebase
+import { firestore } from '../lib/firebaseConfig'; // Importa a configuração do Firebase
 import { collection, getDocs } from 'firebase/firestore'; // Importa as funções necessárias do Firestore
 import LogOut from '../components/logout';
 
@@ -96,14 +95,6 @@ export default function Inicio() {
     return null;
   }
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/login');
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">

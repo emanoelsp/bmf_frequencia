@@ -5,8 +5,6 @@ import { firestore } from '../../lib/firebaseConfig';
 import { collection, getDoc, getDocs, doc, deleteDoc, updateDoc, query, where } from 'firebase/firestore'; 
 import { useAuth } from '../../hooks/auseAuth'; 
 import { useRouter } from 'next/navigation'; 
-import { signOut } from 'firebase/auth'; 
-import { auth } from '../../lib/firebaseConfig'; 
 import LogOut from '@/app/components/logout';
 
 // Defina a interface para Aluno
@@ -148,14 +146,7 @@ export default function RelatorioTurmas() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth); 
-      router.push('/login'); 
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
-  };
+
 
   useEffect(() => {
     if (loading) return; 

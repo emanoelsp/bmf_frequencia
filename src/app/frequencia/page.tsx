@@ -3,8 +3,6 @@
 import { useAuth } from '../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signOut } from 'firebase/auth'; // Importa a função de logout
-import { auth } from '../lib/firebaseConfig'; // Importa a configuração do Firebase
 import LogOut from '../components/logout';
 
 export default function Frequencia() {
@@ -18,15 +16,6 @@ export default function Frequencia() {
     return null;
   }
 
-  // Função de logout
-  const handleLogout = async () => {
-    try {
-      await signOut(auth); // Realiza o logout
-      router.push('/login'); // Redireciona para a página de login
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">

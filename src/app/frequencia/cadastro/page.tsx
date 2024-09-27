@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/auseAuth'; 
 import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth'; 
-import { auth, firestore } from '../../lib/firebaseConfig'; 
+import { firestore } from '../../lib/firebaseConfig'; 
 import { collection, getDocs, doc, getDoc, addDoc, query, where } from 'firebase/firestore';
 import LogOut from '@/app/components/logout';
 
@@ -100,14 +99,7 @@ export default function RelatorioTurmasFrequencia() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/login');
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
-  };
+
 
   const handleCheckboxChange = (id: string) => {
     setPresenca(prev => ({

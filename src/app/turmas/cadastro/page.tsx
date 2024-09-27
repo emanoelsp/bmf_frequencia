@@ -5,8 +5,6 @@ import { firestore } from '../../lib/firebaseConfig';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../lib/firebaseConfig';
 import LogOut from '@/app/components/logout';
 
 interface Aluno {
@@ -45,14 +43,7 @@ export default function Cadastro() {
   const turmaCollectionRef = collection(firestore, 'turmas');
   const alunoCollectionRef = collection(firestore, 'alunos');
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/login');
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
-  };
+
 
   const handleSubmitTurma = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
