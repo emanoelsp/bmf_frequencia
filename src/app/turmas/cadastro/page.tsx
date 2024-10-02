@@ -1,12 +1,11 @@
 "use client"; // Adicione esta linha
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { firestore } from '../../lib/firebaseConfig';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, FirestoreError } from 'firebase/firestore';
 import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
-
 
 interface Turma {
   id: string;
@@ -30,79 +29,23 @@ export default function Cadastro() {
   const [anoAluno, setAnoAluno] = useState<number | string>('');
   const [turmaId, setTurmaId] = useState<string>('');
   const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const turmaCollectionRef = collection(firestore, 'turmas');
   const alunoCollectionRef = collection(firestore, 'alunos');
 
-
-
-  const handleSubmitTurma = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const codigo = generateCodigoTurma();
-    try {
-      await addDoc(turmaCollectionRef, { nomeEscola, anoTurma, codigoTurma: codigo });
-      setNomeEscola('');
-      setAnoTurma('');
-      alert('Turma adicionada com sucesso!');
-      fetchTurmas();
-    } catch (error) {
-      console.error('Erro ao adicionar turma: ', error);
-    }
-  };
-
-  const handleSubmitAluno = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-  
-    if (!nomeAluno || !sobrenomeAluno || !anoAluno || !turmaId) {
-      alert('Por favor, preencha todos os campos!');
-      return;
-    }
-
-    // Encontrar a turma selecionada para obter o nome e código
-    const turmaSelecionada = turmas.find(turma => turma.id === turmaId);
-    
-    if (!turmaSelecionada) {
-      alert('Turma não encontrada!');
-      return;
-    }
-
-    const aluno = {
-      nome: nomeAluno,
-      sobrenome: sobrenomeAluno,
-      anoCursando: Number(anoAluno),
-      turmaId,
-      nomeTurma: turmaSelecionada.nomeEscola, // Adiciona o nome da turma
-      codigoTurma: turmaSelecionada.codigoTurma, // Adiciona o código da turma
-    };
-  
-    try {
-      await addDoc(alunoCollectionRef, aluno);
-      setNomeAluno('');
-      setSobrenomeAluno('');
-      setAnoAluno('');
-      setTurmaId('');
-      alert('Aluno adicionado com sucesso!');
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error('Erro ao adicionar aluno: ', error.message);
-      } else {
-        console.error('Erro desconhecido: ', error);
-      }
-    }
-  };
-
-  const fetchTurmas = async () => {
+  const fetchTurmas = useCallback(async () => {
     const querySnapshot = await getDocs(turmaCollectionRef);
     const turmasData: Turma[] = [];
     querySnapshot.forEach(doc => {
       turmasData.push({ id: doc.id, ...doc.data() } as Turma);
     });
     setTurmas(turmasData);
-  };
+  }, [turmaCollectionRef]);
 
   useEffect(() => {
     fetchTurmas();
-  }, []);
+  }, [fetchTurmas]);
 
   useEffect(() => {
     if (loading) return;
@@ -111,15 +54,95 @@ export default function Cadastro() {
     }
   }, [user, loading, router]);
 
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000); // Dismiss after 3 seconds
+  };
+
+  const handleSubmitTurma = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!nomeEscola || !anoTurma) {
+      showNotification('Por favor, preencha todos os campos da turma!', 'error');
+      return;
+    }
+
+    const codigo = generateCodigoTurma();
+    try {
+      await addDoc(turmaCollectionRef, { nomeEscola, anoTurma, codigoTurma: codigo });
+      setNomeEscola('');
+      setAnoTurma('');
+      showNotification('Turma adicionada com sucesso!', 'success');
+      fetchTurmas();
+    } catch (error: unknown) {
+      if (error instanceof FirestoreError) {
+        console.error('Erro ao adicionar turma: ', error);
+        showNotification('Erro ao adicionar turma: ' + error.message, 'error');
+      } else {
+        console.error('Erro inesperado: ', error);
+        showNotification('Erro inesperado!', 'error');
+      }
+    }
+  };
+
+  const handleSubmitAluno = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+  
+    if (!nomeAluno || !sobrenomeAluno || !anoAluno || !turmaId) {
+      showNotification('Por favor, preencha todos os campos do aluno!', 'error');
+      return;
+    }
+
+    const turmaSelecionada = turmas.find(turma => turma.id === turmaId);
+    
+    if (!turmaSelecionada) {
+      showNotification('Turma não encontrada!', 'error');
+      return;
+    }
+
+    const aluno = {
+      nome: nomeAluno,
+      sobrenome: sobrenomeAluno,
+      anoCursando: Number(anoAluno),
+      turmaId,
+      nomeTurma: turmaSelecionada.nomeEscola,
+      codigoTurma: turmaSelecionada.codigoTurma,
+    };
+  
+    try {
+      await addDoc(alunoCollectionRef, aluno);
+      setNomeAluno('');
+      setSobrenomeAluno('');
+      setAnoAluno('');
+      setTurmaId('');
+      showNotification('Aluno adicionado com sucesso!', 'success');
+    } catch (error: unknown) {
+      if (error instanceof FirestoreError) {
+        console.error('Erro ao adicionar aluno: ', error);
+        showNotification('Erro ao adicionar aluno: ' + error.message, 'error');
+      } else {
+        console.error('Erro inesperado: ', error);
+        showNotification('Erro inesperado!', 'error');
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Cadastro de Turma e Alunos</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">Cadastro de Turma e Alunos</h1>
 
-      <div className="bg-white border-8 p-6 rounded-lg shadow-lg mx-auto mb-8">
+      {notification && (
+        <div className={`fixed top-5 right-5 p-3 rounded text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+          {notification.message}
+        </div>
+      )}
+
+      <div className="bg-white border-8 p-4 rounded-lg shadow-lg mb-8">
         <h2 className="text-3xl font-semibold text-gray-700 mb-4">Cadastro de turmas</h2>
-        <hr className='border-4'></hr>
+        <hr className='border-4' />
 
         <h4 className="mt-2 text-1xl font-semibold text-gray-700 mb-4">Preencha os dados da escola abaixo:</h4>
         <form onSubmit={handleSubmitTurma} className="grid grid-cols-1 gap-4">
@@ -164,9 +187,9 @@ export default function Cadastro() {
         </form>
       </div>
 
-      <div className="bg-white border-8 p-6 rounded-lg shadow-lg mx-auto">
+      <div className="bg-white border-8 p-4 rounded-lg shadow-lg mx-auto">
         <h2 className="text-3xl font-semibold text-gray-700 mb-4">Cadastro de Alunos</h2>
-        <hr className='border-4'></hr>
+        <hr className='border-4' />
 
         <h4 className="mt-2 text-1xl font-semibold text-gray-700 mb-4">Preencha os dados dos alunos abaixo:</h4>
 

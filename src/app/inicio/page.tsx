@@ -97,7 +97,7 @@ export default function Inicio() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
       <hr />
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Estatísticas de Turmas e Frequência</h1>

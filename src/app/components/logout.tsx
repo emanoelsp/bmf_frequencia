@@ -19,13 +19,13 @@ export default function LogOut() {
     };
 
     return (
-        <div className="flex items-center justify-between mb-4">
-            <h1 className="text-1xl font-bold text-black">
+        <div className="flex items-center justify-between mb-0 md:mb-3">
+            <h1 className="lg: text-1xl text-sm font-bold text-black">
                 Bem-vindo, {user?.email}!
             </h1>
             <button
                 onClick={handleLogout}
-                className="ml-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-150"
+                className="ml-4 bg-red-500 text-white text-sm py-2 px-4 rounded hover:bg-red-600 transition duration-150"
             >
                 Sair
             </button>

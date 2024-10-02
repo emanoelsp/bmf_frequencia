@@ -1,43 +1,45 @@
-'use client'
+"use client";
 
 import { useState, useEffect } from 'react';
 import { firestore } from '../../lib/firebaseConfig';
-import { collection, getDoc, getDocs, doc, deleteDoc, updateDoc, query, where } from 'firebase/firestore'; 
-import { useAuth } from '../../hooks/auseAuth'; 
-import { useRouter } from 'next/navigation'; 
+import { collection, getDocs, doc, deleteDoc, updateDoc, query, where, getDoc } from 'firebase/firestore';
+import { useAuth } from '../../hooks/auseAuth';
+import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
 
-// Defina a interface para Aluno
+// Definindo as interfaces para Aluno e Turma
 interface Aluno {
   id: string;
   nome: string;
   sobrenome: string;
   anoCursando: number;
-  turmaId: string; 
+  turmaId: string;
 }
 
-// Defina a interface para Turma
 interface Turma {
   id: string;
   nomeEscola: string;
   anoTurma: string;
   codigoTurma: string;
-  alunosCount?: number; 
+  alunosCount?: number;
 }
 
 export default function RelatorioTurmas() {
-  const { user, loading } = useAuth(); 
+  const { user, loading } = useAuth();
   const router = useRouter();
-  
+
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmaSelecionada, setTurmaSelecionada] = useState<string>('');
-
-  // Estado para edição
   const [editingTurma, setEditingTurma] = useState<Turma | null>(null);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
-  const [turmaFields, setTurmaFields] = useState<{ nomeEscola: string, anoTurma: string }>({ nomeEscola: '', anoTurma: '' });
-  const [alunoFields, setAlunoFields] = useState<{ nome: string, sobrenome: string, anoCursando: number }>({ nome: '', sobrenome: '', anoCursando: 0 });
+  const [turmaFields, setTurmaFields] = useState<{ nomeEscola: string; anoTurma: string }>({ nomeEscola: '', anoTurma: '' });
+  const [alunoFields, setAlunoFields] = useState<{ nome: string; sobrenome: string; anoCursando: number }>({ nome: '', sobrenome: '', anoCursando: 0 });
+
+  // Estado para modais e notificações
+  const [isTurmaModalOpen, setTurmaModalOpen] = useState(false);
+  const [isAlunoModalOpen, setAlunoModalOpen] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const fetchTurmas = async () => {
@@ -52,7 +54,7 @@ export default function RelatorioTurmas() {
       for (const turma of turmasData) {
         const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turma.id));
         const alunosSnapshot = await getDocs(alunosQuery);
-        turma.alunosCount = alunosSnapshot.docs.length; // Define a contagem de alunos
+        turma.alunosCount = alunosSnapshot.docs.length;
       }
 
       setTurmas(turmasData);
@@ -74,8 +76,13 @@ export default function RelatorioTurmas() {
       })) as Aluno[];
       setAlunos(alunosData);
     } else {
-      setAlunos([]); // Limpa a lista se nenhuma turma for selecionada
+      setAlunos([]);
     }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleDeleteTurma = async (turmaId: string) => {
@@ -83,7 +90,8 @@ export default function RelatorioTurmas() {
       const turmaDocRef = doc(firestore, 'turmas', turmaId);
       await deleteDoc(turmaDocRef);
       setTurmas(turmas.filter(turma => turma.id !== turmaId));
-      setTurmaSelecionada(''); // Limpa a seleção
+      setTurmaSelecionada('');
+      showNotification('Turma excluída com sucesso!', 'success');
     }
   };
 
@@ -93,230 +101,161 @@ export default function RelatorioTurmas() {
 
     if (alunoDoc.exists()) {
       const turmaId = alunoDoc.data().turmaId;
-
-      // Exclui o aluno
       await deleteDoc(alunoDocRef);
 
-      // Atualiza a lista de alunos no estado
       const updatedAlunos = alunos.filter(aluno => aluno.id !== alunoId);
       setAlunos(updatedAlunos);
 
-      // Atualiza a contagem de alunos na turma
       const turmaDocRef = doc(firestore, 'turmas', turmaId);
       await updateDoc(turmaDocRef, {
-        alunosCount: updatedAlunos.length, // Atualiza a contagem de alunos
+        alunosCount: updatedAlunos.length,
       });
 
-      // Atualiza o estado das turmas para refletir a nova contagem
-      setTurmas(prevTurmas => 
-        prevTurmas.map(turma => 
+      setTurmas(prevTurmas =>
+        prevTurmas.map(turma =>
           turma.id === turmaId ? { ...turma, alunosCount: updatedAlunos.length } : turma
         )
       );
+
+      showNotification('Aluno excluído com sucesso!', 'success');
     }
   };
 
   const handleEditTurma = (turma: Turma) => {
     setEditingTurma(turma);
     setTurmaFields({ nomeEscola: turma.nomeEscola, anoTurma: turma.anoTurma });
+    setTurmaModalOpen(true);
   };
 
   const handleEditAluno = (aluno: Aluno) => {
     setEditingAluno(aluno);
     setAlunoFields({ nome: aluno.nome, sobrenome: aluno.sobrenome, anoCursando: aluno.anoCursando });
+    setAlunoModalOpen(true);
   };
 
   const handleUpdateTurma = async () => {
+    if (!turmaFields.nomeEscola || !turmaFields.anoTurma) {
+      showNotification('Todos os campos são obrigatórios!', 'error');
+      return;
+    }
+
     if (editingTurma) {
       const turmaDocRef = doc(firestore, 'turmas', editingTurma.id);
       await updateDoc(turmaDocRef, turmaFields);
       setTurmas(turmas.map(turma => turma.id === editingTurma.id ? { ...turma, ...turmaFields } : turma));
       setEditingTurma(null);
       setTurmaFields({ nomeEscola: '', anoTurma: '' });
+      setTurmaModalOpen(false);
+      showNotification('Turma atualizada com sucesso!', 'success');
     }
   };
 
   const handleUpdateAluno = async () => {
+    if (!alunoFields.nome || !alunoFields.sobrenome || alunoFields.anoCursando <= 0) {
+      showNotification('Todos os campos são obrigatórios!', 'error');
+      return;
+    }
+
     if (editingAluno) {
       const alunoDocRef = doc(firestore, 'alunos', editingAluno.id);
       await updateDoc(alunoDocRef, alunoFields);
       setAlunos(alunos.map(aluno => aluno.id === editingAluno.id ? { ...aluno, ...alunoFields } : aluno));
       setEditingAluno(null);
       setAlunoFields({ nome: '', sobrenome: '', anoCursando: 0 });
+      setAlunoModalOpen(false);
+      showNotification('Aluno atualizado com sucesso!', 'success');
     }
   };
 
-
-
   useEffect(() => {
-    if (loading) return; 
+    if (loading) return;
     if (!user) {
-      router.push('/login'); 
+      router.push('/login');
     }
   }, [user, loading, router]);
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <LogOut />
-      <hr />
-      <h1 className="text-3xl font-bold text-center text-black mb-8">Relatório de Turmas e Alunos</h1>
+  // Componente Modal
+  const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
+    if (!isOpen) return null;
 
-      {/* Tabela de Turmas Cadastradas */}
-      <div className="bg-white border-8 p-6 rounded-lg shadow-lg mb-8">
-      <h2 className="text-3xl font-semibold text-gray-700 mb-4">Relatório de turmas cadastradas</h2>
-      <hr className='border-4'></hr>
-
-      <h2 className="text-lg font-semibold text-gray-700 mb-4">Lista de escolas e turmas: </h2>
-
-      <table className="w-full border-t border-b">
-          <thead>
-            <tr>
-              <th className="text-left text-black py-2">Nome da Escola</th>
-              <th className="text-left text-black py-2">Ano da Turma</th>
-              <th className="text-left text-black py-2">Código da Turma</th>
-              <th className="text-left text-black py-2">Número de Alunos</th>
-              <th className="text-left text-black py-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {turmas.map((turma, index) => (
-              <tr key={turma.id} className={index % 2 === 0 ? "bg-gray-200" : "bg-white"}>
-                <td className="py-2 text-black">{turma.nomeEscola}</td>
-                <td className="py-2 text-black">{turma.anoTurma}</td>
-                <td className="py-2 text-black">{turma.codigoTurma}</td>
-                <td className="py-2 text-black">{turma.alunosCount || 0}</td>
-                <td className="py-2">
-                  <button
-                    className="text-purple-700 hover:text-purple-900 mr-4"
-                    onClick={() => handleEditTurma(turma)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="text-red-500 hover:text-red-600"
-                    onClick={() => handleDeleteTurma(turma.id)}
-                  >
-                    Excluir
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {editingTurma && (
-         
-          <div className="border-8 p-4 mt-4">
-            <hr></hr>
-            <h3 className="mt-2 mb-2 text-2xl text-purple-700 font-semibold">Editar Turma</h3>
-            <input
-              type="text"
-              placeholder="Nome da Escola"
-              value={turmaFields.nomeEscola}
-              onChange={(e) => setTurmaFields({ ...turmaFields, nomeEscola: e.target.value })}
-              className="border p-2 mb-2 w-full text-black"
-            />
-            <input
-              type="text"
-              placeholder="Ano da Turma"
-              value={turmaFields.anoTurma}
-              onChange={(e) => setTurmaFields({ ...turmaFields, anoTurma: e.target.value })}
-              className="border p-2 mb-2 w-full text-black"
-            />
-            <button onClick={handleUpdateTurma} className="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-900">
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white rounded p-4 w-11/12 md:w-1/3">
+          <h2 className="text-xl font-semibold text-black mb-4">{title}</h2>
+          <button onClick={onClose} className="absolute top-2 right-2 text-gray-500">✖️</button>
+          {children}
+          <div className="flex justify-end mt-4">
+            <button onClick={onClose} className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-600 mr-2">Cancelar</button>
+            <button onClick={title === "Editar Turma" ? handleUpdateTurma : handleUpdateAluno} className="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-900">
               Atualizar
             </button>
           </div>
-        )}
-      </div>
-
-      {/* Seção de Listagem de Alunos */}
-      <div className="bg-white border-8 p-6 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-semibold text-gray-700 mb-4">Alunos cadastrados</h2>
-      <hr className='border-4'></hr>
-
-      <div className="mb-8">
-          <label className="block text-gray-600 mb-2" htmlFor="turma">Selecione a Turma:</label>
-          <select
-            id="turma"
-            value={turmaSelecionada}
-            onChange={handleTurmaChange}
-            className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Selecione uma turma</option>
-            {turmas.map((turma) => (
-              <option key={turma.id} value={turma.id} className="text-black">
-                {turma.nomeEscola} - {turma.anoTurma} - {turma.codigoTurma} 
-              </option>
-            ))}
-          </select>
         </div>
-        <hr className='border-4'></hr>
-
-        <h2 className="text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
-
-        <table className="w-full border-t border-b">
-          <thead>
-            <tr>
-              <th className="text-left text-black py-2">Nome do Aluno</th>
-              <th className="text-left text-black py-2">Ano que está cursando</th>
-              <th className="text-left text-black py-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {alunos.map((aluno, index) => (
-              <tr key={aluno.id} className={index % 2 === 0 ? "bg-gray-200" : "bg-white"}>
-                <td className="py-2 text-black">{aluno.nome} {aluno.sobrenome}</td>
-                <td className="py-2 text-black">{aluno.anoCursando}</td>
-                <td className="py-2">
-                  <button
-                    className="text-purple-700 hover:text-purple-900 mr-4"
-                    onClick={() => handleEditAluno(aluno)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="text-red-500 hover:text-red-600"
-                    onClick={() => handleDeleteAluno(aluno.id)}
-                  >
-                    Excluir
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {editingAluno && (
-          <div className="mt-4 border-8 p-4 ">
-            <h3 className="text-lg font-semibold text-purple-700">Editar Aluno</h3>
-            <input
-              type="text"
-              placeholder="Nome"
-              value={alunoFields.nome}
-              onChange={(e) => setAlunoFields({ ...alunoFields, nome: e.target.value })}
-              className="border p-2 mb-2 w-full text-black"
-            />
-            <input
-              type="text"
-              placeholder="Sobrenome"
-              value={alunoFields.sobrenome}
-              onChange={(e) => setAlunoFields({ ...alunoFields, sobrenome: e.target.value })}
-              className="border p-2 mb-2 w-full text-black"
-            />
-            <input
-              type="number"
-              placeholder="Ano Cursando"
-              value={alunoFields.anoCursando}
-              onChange={(e) => setAlunoFields({ ...alunoFields, anoCursando: Number(e.target.value) })}
-              className="border p-2 mb-2 w-full text-black"
-            />
-            <button onClick={handleUpdateAluno} className="bg-purple-700 text-white py-2 px-4 rounded hover:bg-purple-900">
-              Atualizar
-            </button>
-          </div>
-        )}
       </div>
+    );
+  };
+
+  // Componente de Notificação
+  const Notification = ({ message, type }: { message: string; type: 'success' | 'error' }) => (
+    <div className={`fixed top-5 right-5 p-3 rounded text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+      {message}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
+      <LogOut />
+      <h1 className="text-2xl font-bold mb-4">Relatório de Turmas</h1>
+      <select onChange={handleTurmaChange} className="border p-2 mb-4">
+        <option value="">Selecione uma turma</option>
+        {turmas.map(turma => (
+          <option key={turma.id} value={turma.id}>{turma.nomeEscola} - {turma.anoTurma}</option>
+        ))}
+      </select>
+
+      {turmaSelecionada && (
+        <div>
+          <h2 className="text-xl mb-4">Alunos na Turma:</h2>
+          {alunos.map(aluno => (
+            <div key={aluno.id} className="flex justify-between items-center mb-2">
+              <span>{aluno.nome} {aluno.sobrenome} - {aluno.anoCursando}</span>
+              <div>
+                <button onClick={() => handleEditAluno(aluno)} className="text-blue-500 hover:underline mr-2">Editar</button>
+                <button onClick={() => handleDeleteAluno(aluno.id)} className="text-red-500 hover:underline">Excluir</button>
+              </div>
+            </div>
+          ))}
+          <button onClick={() => setAlunoModalOpen(true)} className="bg-green-500 text-white px-4 py-2 rounded">Adicionar Aluno</button>
+        </div>
+      )}
+
+      <h2 className="text-xl mb-4">Turmas:</h2>
+      {turmas.map(turma => (
+        <div key={turma.id} className="flex justify-between items-center mb-2">
+          <span>{turma.nomeEscola} - {turma.anoTurma}</span>
+          <div>
+            <button onClick={() => handleEditTurma(turma)} className="text-blue-500 hover:underline mr-2">Editar</button>
+            <button onClick={() => handleDeleteTurma(turma.id)} className="text-red-500 hover:underline">Excluir</button>
+          </div>
+        </div>
+      ))}
+
+      <Modal isOpen={isTurmaModalOpen} onClose={() => setTurmaModalOpen(false)} title="Editar Turma">
+        <div>
+          <input type="text" value={turmaFields.nomeEscola} onChange={e => setTurmaFields({ ...turmaFields, nomeEscola: e.target.value })} placeholder="Nome da Escola" className="border p-2 mb-2 w-full" />
+          <input type="text" value={turmaFields.anoTurma} onChange={e => setTurmaFields({ ...turmaFields, anoTurma: e.target.value })} placeholder="Ano da Turma" className="border p-2 mb-2 w-full" />
+        </div>
+      </Modal>
+
+      <Modal isOpen={isAlunoModalOpen} onClose={() => setAlunoModalOpen(false)} title="Editar Aluno">
+        <div>
+          <input type="text" value={alunoFields.nome} onChange={e => setAlunoFields({ ...alunoFields, nome: e.target.value })} placeholder="Nome" className="border p-2 mb-2 w-full" />
+          <input type="text" value={alunoFields.sobrenome} onChange={e => setAlunoFields({ ...alunoFields, sobrenome: e.target.value })} placeholder="Sobrenome" className="border p-2 mb-2 w-full" />
+          <input type="number" value={alunoFields.anoCursando} onChange={e => setAlunoFields({ ...alunoFields, anoCursando: Number(e.target.value) })} placeholder="Ano Cursando" className="border p-2 mb-2 w-full" />
+        </div>
+      </Modal>
+
+      {notification && <Notification {...notification} />}
     </div>
   );
 }

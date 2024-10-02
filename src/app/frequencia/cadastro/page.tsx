@@ -12,7 +12,7 @@ interface Aluno {
   nome: string;
   sobrenome: string;
   anoCursando: number;
-  turmaId: string; // Adicionei a turmaId para referenciar a turma
+  turmaId: string;
 }
 
 interface Turma {
@@ -31,6 +31,11 @@ export default function RelatorioTurmasFrequencia() {
   const [turmaSelecionada, setTurmaSelecionada] = useState<string>('');
   const [data, setData] = useState<string>('');
   const [presenca, setPresenca] = useState<{ [key: string]: boolean }>({});
+  
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | null }>({
+    message: '',
+    type: null,
+  });
 
   useEffect(() => {
     if (loading) return;
@@ -71,7 +76,10 @@ export default function RelatorioTurmasFrequencia() {
 
   const handleSalvarFrequencia = async () => {
     if (!data || !turmaSelecionada) {
-      alert('Por favor, preencha a data e selecione uma turma.');
+      setNotification({
+        message: 'Por favor, preencha a data e selecione uma turma.',
+        type: 'error',
+      });
       return;
     }
 
@@ -88,18 +96,27 @@ export default function RelatorioTurmasFrequencia() {
 
     try {
       await addDoc(collection(firestore, 'frequencia_diaria'), frequenciaData);
-      alert('Frequência salva com sucesso!');
+      setNotification({
+        message: 'Frequência salva com sucesso!',
+        type: 'success',
+      });
       setPresenca({});
       setData('');
       setTurmaSelecionada('');
       setAlunos([]);
     } catch (error) {
       console.error('Erro ao salvar a frequência: ', error);
-      alert('Erro ao salvar a frequência.');
+      setNotification({
+        message: 'Erro ao salvar a frequência.',
+        type: 'error',
+      });
     }
+
+    // Remove a notificação após 3 segundos
+    setTimeout(() => {
+      setNotification({ message: '', type: null });
+    }, 3000);
   };
-
-
 
   const handleCheckboxChange = (id: string) => {
     setPresenca(prev => ({
@@ -111,17 +128,23 @@ export default function RelatorioTurmasFrequencia() {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2 relative">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-black mb-8">Cadastrar frequência dos alunos</h1>
+      <h1 className="text-xl md:text-3xl font-bold text-center text-black mb-8 mt-2">Cadastrar frequência dos alunos</h1>
 
-      <div className="bg-white border-8 p-6 rounded-lg shadow-lg">
+      {/* Notificação */}
+      {notification.message && (
+        <div className={`fixed top-4 right-4 p-4 rounded shadow-lg text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+          {notification.message}
+        </div>
+      )}
+
+      <div className="bg-white border-8 p-4 rounded-lg shadow-lg">
         <div className="mb-8">
-          <h2 className="text-3xl font-semibold text-gray-700 mb-4">Registro de frequência</h2>
-          <hr className='border-4'></hr>
-
-          <h2 className="mt-2 text-1lg font-semibold text-gray-700 mb-4">Informe a turma:</h2>
+          <h2 className="text-1xl md:text-3xl font-semibold text-gray-700 mb-4">Registro de frequência</h2>
+          <hr className='border-4' />
+          <h2 className="mt-2 text-1lg md:text-lg font-semibold text-gray-700 mb-4">Informe a turma:</h2>
 
           <select
             id="turma"
@@ -139,45 +162,45 @@ export default function RelatorioTurmasFrequencia() {
         </div>
 
         <div className="mb-6">
-
-          <h2 className="text-1lg font-semibold text-gray-700 mb-4">Informe a data:</h2>
-
+          <h2 className="text-1lg md:text-lg font-semibold text-gray-700 mb-4">Informe a data:</h2>
           <input
             type="date"
             id="data"
-            className="w-full p-3 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full text-1lg md:text-lg p-3 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={data}
             onChange={(e) => setData(e.target.value)}
           />
         </div>
-        <hr className='border-4'></hr>
+        <hr className='border-4' />
 
-        <h2 className="mt-2 text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
-        <table className="w-full border-t border-b">
-          <thead>
-            <tr>
-              <th className="text-left text-black py-2">Nome do Aluno</th>
-              <th className="text-left text-black py-2">Ano que está cursando</th>
-              <th className="text-left text-black py-2">Presença</th>
-            </tr>
-          </thead>
-          <tbody>
-            {alunos.map((aluno, index) => (
-              <tr key={aluno.id} className={index % 2 === 0 ? "bg-gray-200" : "bg-white"}>
-                <td className="py-2 text-black">{aluno.nome} {aluno.sobrenome}</td>
-                <td className="py-2 text-black">{aluno.anoCursando}</td>
-                <td className="py-2">
-                  <input
-                    type="checkbox"
-                    className="w-6 h-6"
-                    checked={presenca[aluno.id] || false}
-                    onChange={() => handleCheckboxChange(aluno.id)}
-                  />
-                </td>
+        <h2 className="mt-2 text-1xl md:text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-t border-b">
+            <thead className='border-2 border-y-black'>
+              <tr className='text-sm md:text-1lg'>
+                <th className="text-left text-black py-2">Nome do Aluno</th>
+                <th className="text-left text-black py-2">Ano que está cursando</th>
+                <th className="text-left text-black py-2">Presença</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {alunos.map((aluno, index) => (
+                <tr key={aluno.id} className={index % 2 === 0 ? "bg-gray-200" : "bg-white"}>
+                  <td className="py-2 text-black">{aluno.nome} {aluno.sobrenome}</td>
+                  <td className="py-2 text-black">{aluno.anoCursando}</td>
+                  <td className="py-2">
+                    <input
+                      type="checkbox"
+                      className="w-6 h-6"
+                      checked={presenca[aluno.id] || false}
+                      onChange={() => handleCheckboxChange(aluno.id)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <div className="mt-6 text-center">
           <button

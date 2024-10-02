@@ -5,8 +5,6 @@ import 'tailwindcss/tailwind.css'
 import Header from "../app/components/header"
 import Footer from '../app/components/footer'
 
-
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -20,10 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-zinc-900 bg-opacity-30 text-white p-10`}>
-        
+      <body className={`${inter.className} bg-gray-900 bg-opacity-50 text-white`}>
         <Header />
-        <main className="container max-w-[1800px] max-h-[1800px]">{children}</main>
+        <main className="w-full max-h-[1800px]">{children}</main>
         <Footer />
       </body>
     </html>

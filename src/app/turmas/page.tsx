@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LogOut from '../components/logout';
+import { UsersIcon, ChartBarIcon } from '@heroicons/react/24/solid'; // Importe os ícones
 
 export default function Turmas() {
   const { user, loading } = useAuth();
@@ -16,18 +17,17 @@ export default function Turmas() {
     return null;
   }
 
-
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Gerenciamento de Turmas</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-1">Gerenciamento de Turmas</h1>
 
       {/* Seção de Botões */}
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Botão Cadastrar Turmas */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">Cadastrar Turmas e Alunos</h2>
+          <UsersIcon className="h-12 w-12 text-blue-500 mb-4" /> {/* Ícone de pessoas */}
           <Link href="/turmas/cadastro">
             <button
               className="bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-700 focus:outline-none focus:bg-blue-700 transition duration-150"
@@ -39,7 +39,7 @@ export default function Turmas() {
 
         {/* Botão Relatórios de Turmas */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">Relatórios de Turmas e Alunos</h2>
+          <ChartBarIcon className="h-12 w-12 text-green-600 mb-4" /> {/* Ícone de gráfico */}
           <Link href="/turmas/relatorio">
             <button
               className="bg-green-600 text-white py-3 px-6 rounded hover:bg-green-800 focus:outline-none focus:bg-green-800 transition duration-150"
