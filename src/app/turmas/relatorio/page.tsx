@@ -205,57 +205,132 @@ export default function RelatorioTurmas() {
   return (
     <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
-      <h1 className="text-2xl font-bold mb-4">Relatório de Turmas</h1>
-      <select onChange={handleTurmaChange} className="border p-2 mb-4">
-        <option value="">Selecione uma turma</option>
-        {turmas.map(turma => (
-          <option key={turma.id} value={turma.id}>{turma.nomeEscola} - {turma.anoTurma}</option>
-        ))}
-      </select>
+      <hr />
+      <h1 className="text-2xl md:text-3xl font-bold text-center text-black mb-8">Relatório de Turmas e Alunos</h1>
 
-      {turmaSelecionada && (
-        <div>
-          <h2 className="text-xl mb-4">Alunos na Turma:</h2>
-          {alunos.map(aluno => (
-            <div key={aluno.id} className="flex justify-between items-center mb-2">
-              <span>{aluno.nome} {aluno.sobrenome} - {aluno.anoCursando}</span>
-              <div>
-                <button onClick={() => handleEditAluno(aluno)} className="text-blue-500 hover:underline mr-2">Editar</button>
-                <button onClick={() => handleDeleteAluno(aluno.id)} className="text-red-500 hover:underline">Excluir</button>
-              </div>
-            </div>
+      {notification && <Notification message={notification.message} type={notification.type} />}
+
+      {/* Tabela de Turmas Cadastradas */}
+      <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg mb-8">
+        <h2 className="text-xl md:text-3xl font-semibold text-gray-700 mb-4">Relatório de turmas cadastradas</h2>
+        <hr className='border-4' />
+
+        <h2 className="text-xl md:text-1xl font-semibold text-gray-700 mb-4">Lista de turmas:</h2>
+
+        <table className="w-full border-t border-b">
+          <thead>
+            <tr className='text-sm md:text-1xl bg-gray-200 border-2 border-y-black'>
+              <th className="text-left text-black py-1 md:py-2">Nome da Escola</th>
+              <th className="text-left text-black py-1 md:py-2">Ano da Turma</th>
+              <th className="text-left text-black py-1 md:py-2">Código da Turma</th>
+              <th className="text-left text-black py-1 md:py-2">Número de Alunos</th>
+              <th className="text-left text-black py-1 md:py-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {turmas.map((turma) => (
+              <tr key={turma.id} className='text-sm md:text-1xl border-b border-gray-200 text-gray-800'>
+                <td className="py-1 md:py-2">{turma.nomeEscola}</td>
+                <td className="py-1 md:py-2">{turma.anoTurma}</td>
+                <td className="py-1 md:py-2">{turma.codigoTurma}</td>
+                <td className="py-1 md:py-2">{turma.alunosCount || 0}</td>
+                <td className="py-1 md:py-2">
+                  <button onClick={() => handleEditTurma(turma)} className="bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-900">Editar</button>
+                  <button onClick={() => handleDeleteTurma(turma.id)} className="bg-red-600 text-white py-1 px-2 rounded hover:bg-red-900 ml-2">Excluir</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Seleção de Turma e Alunos */}
+      <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg mb-8">
+        <h2 className="text-xl md:text-3xl font-semibold text-gray-700 mb-4">Relatório de alunos por turma</h2>
+        <hr className='border-4 mb-2' />
+
+        <select value={turmaSelecionada} onChange={handleTurmaChange} className="text-gray-700 border border-gray-300 rounded p-2 mb-4 w-full">
+          <option value="">Selecione uma turma</option>
+          {turmas.map((turma) => (
+            <option key={turma.id} value={turma.id}>{turma.nomeEscola} - {turma.anoTurma}</option>
           ))}
-          <button onClick={() => setAlunoModalOpen(true)} className="bg-green-500 text-white px-4 py-2 rounded">Adicionar Aluno</button>
-        </div>
-      )}
+        </select>
+        <h2 className="text-xl md:text-1xl font-semibold text-gray-700 mb-4">Lista de alunos:</h2>
 
-      <h2 className="text-xl mb-4">Turmas:</h2>
-      {turmas.map(turma => (
-        <div key={turma.id} className="flex justify-between items-center mb-2">
-          <span>{turma.nomeEscola} - {turma.anoTurma}</span>
-          <div>
-            <button onClick={() => handleEditTurma(turma)} className="text-blue-500 hover:underline mr-2">Editar</button>
-            <button onClick={() => handleDeleteTurma(turma.id)} className="text-red-500 hover:underline">Excluir</button>
-          </div>
-        </div>
-      ))}
+        <table className="w-full border-t border-b">
+          <thead>
+            <tr className='text-sm md:text-1xl bg-gray-200 border-2 border-y-black'>
+              <th className="text-left text-black py-1 md:py-2">Nome</th>
+              <th className="text-left text-black py-1 md:py-2">Sobrenome</th>
+              <th className="text-left text-black py-1 md:py-2">Ano Cursando</th>
+              <th className="text-left text-black py-1 md:py-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {alunos.map((aluno) => (
+              <tr key={aluno.id} className='text-sm md:text-1xl border-b border-gray-200 text-gray-800'>
+                <td className="py-1 md:py-2">{aluno.nome}</td>
+                <td className="py-1 md:py-2">{aluno.sobrenome}</td>
+                <td className="py-1 md:py-2">{aluno.anoCursando}</td>
+                <td className="py-1 md:py-2">
+                  <button onClick={() => handleEditAluno(aluno)} className="bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-900">Editar</button>
+                  <button onClick={() => handleDeleteAluno(aluno.id)} className="bg-red-600 text-white py-1 px-2 rounded hover:bg-red-900 ml-2">Excluir</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
+      {/* Modais de Edição */}
+     // Para o Modal de Edição de Turma
       <Modal isOpen={isTurmaModalOpen} onClose={() => setTurmaModalOpen(false)} title="Editar Turma">
-        <div>
-          <input type="text" value={turmaFields.nomeEscola} onChange={e => setTurmaFields({ ...turmaFields, nomeEscola: e.target.value })} placeholder="Nome da Escola" className="border p-2 mb-2 w-full" />
-          <input type="text" value={turmaFields.anoTurma} onChange={e => setTurmaFields({ ...turmaFields, anoTurma: e.target.value })} placeholder="Ano da Turma" className="border p-2 mb-2 w-full" />
-        </div>
+        <label className='text-gray-500 text-lg'> Nome da Escola: </label>
+        <input
+          type="text"
+          placeholder="Nome da Escola"
+          value={turmaFields.nomeEscola}
+          onChange={(e) => setTurmaFields({ ...turmaFields, nomeEscola: e.target.value })}
+          className="border p-2 mb-2 w-full text-black"
+        />
+        <label className='text-gray-500 text-lg'> Ano da Turma: </label>
+        <input
+          type="text"
+          placeholder="Ano da Turma"
+          value={turmaFields.anoTurma}
+          onChange={(e) => setTurmaFields({ ...turmaFields, anoTurma: e.target.value })}
+          className="border p-2 mb-2 w-full text-black"
+        />
       </Modal>
 
+// Para o Modal de Edição de Aluno
       <Modal isOpen={isAlunoModalOpen} onClose={() => setAlunoModalOpen(false)} title="Editar Aluno">
-        <div>
-          <input type="text" value={alunoFields.nome} onChange={e => setAlunoFields({ ...alunoFields, nome: e.target.value })} placeholder="Nome" className="border p-2 mb-2 w-full" />
-          <input type="text" value={alunoFields.sobrenome} onChange={e => setAlunoFields({ ...alunoFields, sobrenome: e.target.value })} placeholder="Sobrenome" className="border p-2 mb-2 w-full" />
-          <input type="number" value={alunoFields.anoCursando} onChange={e => setAlunoFields({ ...alunoFields, anoCursando: Number(e.target.value) })} placeholder="Ano Cursando" className="border p-2 mb-2 w-full" />
-        </div>
+        <label className='text-gray-500 text-lg'> Nome Aluno: </label>
+        <input
+          type="text"
+          placeholder="Nome"
+          value={alunoFields.nome}
+          onChange={(e) => setAlunoFields({ ...alunoFields, nome: e.target.value })}
+          className="border p-2 mb-2 w-full text-black"
+        />
+        <label className='text-gray-500 text-lg'> Sobrenome: </label>
+        <input
+          type="text"
+          placeholder="Sobrenome"
+          value={alunoFields.sobrenome}
+          onChange={(e) => setAlunoFields({ ...alunoFields, sobrenome: e.target.value })}
+          className="border p-2 mb-2 w-full text-black"
+        />
+        <label className='text-gray-500 text-lg'> Série que está cursando: </label>
+        <input
+          type="number"
+          placeholder="Ano Cursando"
+          value={alunoFields.anoCursando}
+          onChange={(e) => setAlunoFields({ ...alunoFields, anoCursando: parseInt(e.target.value) })}
+          className="border p-2 mb-2 w-full text-black"
+        />
       </Modal>
 
-      {notification && <Notification {...notification} />}
     </div>
   );
 }
