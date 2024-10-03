@@ -283,7 +283,7 @@ export default function RelatorioTurmas() {
       </div>
 
       {/* Modais de Edição */}
-     // Para o Modal de Edição de Turma
+      {/* Para o Modal de Edição de Turma */}
       <Modal isOpen={isTurmaModalOpen} onClose={() => setTurmaModalOpen(false)} title="Editar Turma">
         <label className='text-gray-500 text-lg'> Nome da Escola: </label>
         <input
@@ -303,7 +303,7 @@ export default function RelatorioTurmas() {
         />
       </Modal>
 
-// Para o Modal de Edição de Aluno
+      {/* Para o Modal de Edição de Aluno */}
       <Modal isOpen={isAlunoModalOpen} onClose={() => setAlunoModalOpen(false)} title="Editar Aluno">
         <label className='text-gray-500 text-lg'> Nome Aluno: </label>
         <input
