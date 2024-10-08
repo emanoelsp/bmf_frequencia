@@ -19,7 +19,7 @@ export default function LogOut() {
     };
 
     return (
-        <div className="flex items-center justify-between bg-gray-700 md:bg-white mb-0 md:mb-3">
+        <div className="flex items-center justify-between bg-gray-700 md:bg-gray-100 mb-0 md:mb-3">
             <h1 className="text-sm text-white md:text-black">
                 Bem-vindo, {user?.email}!
             </h1>

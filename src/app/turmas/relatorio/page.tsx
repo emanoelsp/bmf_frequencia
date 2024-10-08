@@ -72,7 +72,7 @@ export default function RelatorioTurmas() {
   const handleTurmaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const turmaId = e.target.value;
     setTurmaSelecionada(turmaId);
-
+  
     if (turmaId) {
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
       const alunosSnapshot = await getDocs(alunosQuery);
@@ -80,7 +80,10 @@ export default function RelatorioTurmas() {
         id: doc.id,
         ...doc.data(),
       })) as Aluno[];
-      setAlunos(alunosData);
+  
+      // Ordenar os alunos por nome
+      const alunosOrdenados = alunosData.sort((a, b) => a.nome.localeCompare(b.nome));
+      setAlunos(alunosOrdenados);
     } else {
       setAlunos([]);
     }

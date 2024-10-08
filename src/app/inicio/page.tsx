@@ -99,8 +99,8 @@ export default function Inicio() {
   return (
     <div className="min-h-screen bg-gray-100 p-0 mb-8 md:mb-0 md:p-2">
       <LogOut />
-   
-      <h1 className="text-3xl font-bold text-center text-gray-800 mt-2">Estatísticas de Turmas e Frequência</h1>
+      <hr />
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2"> Estatísticas de Turmas e Frequência</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -139,6 +139,8 @@ export default function Inicio() {
           <p className="text-gray-500 mt-2">Total de dias com frequência registrada</p>
         </div>
       </div>
+      <br />
+      <br />
     </div>
   );
 }
