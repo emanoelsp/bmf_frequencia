@@ -10,7 +10,6 @@ import LogOut from '@/app/components/logout';
 interface Aluno {
   id: string;
   nome: string;
-  sobrenome: string;
   anoCursando: number;
   turmaId: string;
 }
@@ -88,7 +87,6 @@ export default function RelatorioTurmasFrequencia() {
       data,
       alunos: alunos.map(aluno => ({
         nome: aluno.nome,
-        sobrenome: aluno.sobrenome,
         turma: aluno.turmaId,
         presenca: presenca[aluno.id] ? 'V' : 'F',
       })),
@@ -131,7 +129,7 @@ export default function RelatorioTurmasFrequencia() {
     <div className="min-h-screen bg-gray-100 p-0 md:p-2 relative">
       <LogOut />
       <hr />
-      <h1 className="text-xl md:text-3xl font-bold text-center text-black mb-8 mt-2">Cadastrar frequência dos alunos</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2"> Cadastrar frequência dos alunos</h1>
 
       {/* Notificação */}
       {notification.message && (
@@ -186,7 +184,7 @@ export default function RelatorioTurmasFrequencia() {
             <tbody>
               {alunos.map((aluno, index) => (
                 <tr key={aluno.id} className={index % 2 === 0 ? "bg-gray-200" : "bg-white"}>
-                  <td className="py-2 text-black">{aluno.nome} {aluno.sobrenome}</td>
+                  <td className="py-2 text-black">{aluno.nome}</td>
                   <td className="py-2 text-black">{aluno.anoCursando}</td>
                   <td className="py-2">
                     <input

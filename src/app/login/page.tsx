@@ -1,4 +1,3 @@
-// pages/login.tsx
 "use client";
 
 import { useState } from 'react';
@@ -20,16 +19,18 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/inicio'); // Redireciona para a página inicial após o login
     } catch (err) {
-      // Verifique se err é um objeto com a propriedade 'message'
       const errorMessage = (err instanceof Error) ? err.message : "Erro desconhecido";
       setError(errorMessage);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 ">
-      <div className="bg-white p-8 border-8 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-gray-700">Login</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className='block md:hidden'>
+      <h2 className="text-2xl font-bold text-center p-4 mb-6 text-black mt-0">BOTANDO A MÃO E FAZENDO</h2>
+      </div>
+      <div className="bg-white p-10 border-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-3xl font-bold text-center text-gray-700">Login</h2>
         {error && <p className="text-red-500 text-center mt-2">{error}</p>}
         <form onSubmit={handleSubmit} className="mt-6">
           <div className="mb-4">
@@ -66,6 +67,6 @@ export default function Login() {
           </div>
         </form>
       </div>
-    </div>
+    </div >
   );
 }

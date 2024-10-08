@@ -1,4 +1,4 @@
-"use client"; // Adicione esta linha
+"use client";
 
 import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { firestore } from '../../lib/firebaseConfig';
@@ -24,9 +24,8 @@ export default function Cadastro() {
 
   const [nomeEscola, setNomeEscola] = useState('');
   const [anoTurma, setAnoTurma] = useState('');
-  const [nomeAluno, setNomeAluno] = useState('');
-  const [sobrenomeAluno, setSobrenomeAluno] = useState('');
-  const [anoAluno, setAnoAluno] = useState<number | string>('');
+  const [nomeCompletoAluno, setNomeCompletoAluno] = useState('');
+  const [anoAluno, setAnoAluno] = useState<string>(''); // Mantido como string
   const [turmaId, setTurmaId] = useState<string>('');
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -88,8 +87,8 @@ export default function Cadastro() {
 
   const handleSubmitAluno = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-  
-    if (!nomeAluno || !sobrenomeAluno || !anoAluno || !turmaId) {
+
+    if (!nomeCompletoAluno || !anoAluno || !turmaId) {
       showNotification('Por favor, preencha todos os campos do aluno!', 'error');
       return;
     }
@@ -102,9 +101,8 @@ export default function Cadastro() {
     }
 
     const aluno = {
-      nome: nomeAluno,
-      sobrenome: sobrenomeAluno,
-      anoCursando: Number(anoAluno),
+      nome: nomeCompletoAluno,
+      anoCursando: anoAluno, // O ano que o aluno está cursando
       turmaId,
       nomeTurma: turmaSelecionada.nomeEscola,
       codigoTurma: turmaSelecionada.codigoTurma,
@@ -112,11 +110,10 @@ export default function Cadastro() {
   
     try {
       await addDoc(alunoCollectionRef, aluno);
-      setNomeAluno('');
-      setSobrenomeAluno('');
-      setAnoAluno('');
-      setTurmaId('');
+      // Limpa apenas o nome do aluno após o cadastro
+      setNomeCompletoAluno('');
       showNotification('Aluno adicionado com sucesso!', 'success');
+      // Não limpar turmaId para manter a turma selecionada
     } catch (error: unknown) {
       if (error instanceof FirestoreError) {
         console.error('Erro ao adicionar aluno: ', error);
@@ -132,7 +129,7 @@ export default function Cadastro() {
     <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">Cadastro de Turma e Alunos</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2"> Cadastro de Turma e Alunos</h1>
 
       {notification && (
         <div className={`fixed top-5 right-5 p-3 rounded text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -169,15 +166,6 @@ export default function Cadastro() {
                 placeholder="Digite o ano da turma"
               />
             </div>
-            <div>
-              <label className="block text-gray-600 mb-2">Código da Turma</label>
-              <input
-                type="text"
-                value={generateCodigoTurma()}
-                readOnly
-                className="w-full p-3 border border-gray-300 rounded text-gray-600 bg-gray-200"
-              />
-            </div>
           </div>
           <div className="mt-1">
             <button className="bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-600 focus:outline-none focus:bg-blue-600 transition duration-150">
@@ -196,25 +184,14 @@ export default function Cadastro() {
         <form onSubmit={handleSubmitAluno}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="mb-4">
-              <label htmlFor="nomeAluno" className="block text-gray-600 mb-2">Nome</label>
+              <label htmlFor="nomeCompletoAluno" className="block text-gray-600 mb-2">Nome Completo</label>
               <input
                 type="text"
-                id="nomeAluno"
-                value={nomeAluno}
-                onChange={(e) => setNomeAluno(e.target.value)}
+                id="nomeCompletoAluno"
+                value={nomeCompletoAluno}
+                onChange={(e) => setNomeCompletoAluno(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Digite o nome do aluno"
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="sobrenomeAluno" className="block text-gray-600 mb-2">Sobrenome</label>
-              <input
-                type="text"
-                id="sobrenomeAluno"
-                value={sobrenomeAluno}
-                onChange={(e) => setSobrenomeAluno(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Digite o sobrenome do aluno"
+                placeholder="Digite o nome completo do aluno"
               />
             </div>
             <div className="mb-4">
@@ -223,7 +200,7 @@ export default function Cadastro() {
                 type="text"
                 id="anoAluno"
                 value={anoAluno}
-                onChange={(e) => setAnoAluno(Number(e.target.value))}
+                onChange={(e) => setAnoAluno(e.target.value)} // Mantido como string
                 className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Digite o ano que o aluno está cursando"
               />

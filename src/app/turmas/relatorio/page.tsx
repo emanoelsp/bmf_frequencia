@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { firestore } from '../../lib/firebaseConfig';
 import { collection, getDocs, doc, deleteDoc, updateDoc, query, where, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
+import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
 
-// Definindo as interfaces para Aluno e Turma
+
 interface Aluno {
   id: string;
   nome: string;
-  sobrenome: string;
   anoCursando: number;
   turmaId: string;
 }
@@ -34,12 +34,19 @@ export default function RelatorioTurmas() {
   const [editingTurma, setEditingTurma] = useState<Turma | null>(null);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [turmaFields, setTurmaFields] = useState<{ nomeEscola: string; anoTurma: string }>({ nomeEscola: '', anoTurma: '' });
-  const [alunoFields, setAlunoFields] = useState<{ nome: string; sobrenome: string; anoCursando: number }>({ nome: '', sobrenome: '', anoCursando: 0 });
+  const [alunoFields, setAlunoFields] = useState<{ nome: string; anoCursando: number }>({ nome: '', anoCursando: 0 });
 
-  // Estado para modais e notificações
   const [isTurmaModalOpen, setTurmaModalOpen] = useState(false);
   const [isAlunoModalOpen, setAlunoModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const [autoFocusInput, setAutoFocusInput] = useState<string | null>(null); // New state for autofocus
+
+  // Refs for inputs
+  const nomeEscolaRef = useRef<HTMLInputElement>(null);
+  const anoTurmaRef = useRef<HTMLInputElement>(null);
+  const alunoNomeRef = useRef<HTMLInputElement>(null);
+  const alunoAnoCursandoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchTurmas = async () => {
@@ -50,7 +57,6 @@ export default function RelatorioTurmas() {
         ...doc.data(),
       })) as Turma[];
 
-      // Atualiza a contagem de alunos
       for (const turma of turmasData) {
         const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turma.id));
         const alunosSnapshot = await getDocs(alunosQuery);
@@ -86,8 +92,22 @@ export default function RelatorioTurmas() {
   };
 
   const handleDeleteTurma = async (turmaId: string) => {
-    if (confirm("Você tem certeza que deseja excluir esta turma?")) {
-      const turmaDocRef = doc(firestore, 'turmas', turmaId);
+    const turmaDocRef = doc(firestore, 'turmas', turmaId);
+    const turmaDoc = await getDoc(turmaDocRef);
+
+    if (!turmaDoc.exists()) {
+      showNotification('Turma não encontrada!', 'error');
+      return;
+    }
+
+    const turmaData = turmaDoc.data() as Turma;
+
+    if (turmaData.alunosCount && turmaData.alunosCount > 0) {
+      showNotification('Esta turma não pode ser excluída porque possui alunos!', 'error');
+      return;
+    }
+
+    if (confirm("Você tem certeza que deseja excluir esta turma? Esta ação não pode ser desfeita.")) {
       await deleteDoc(turmaDocRef);
       setTurmas(turmas.filter(turma => turma.id !== turmaId));
       setTurmaSelecionada('');
@@ -125,12 +145,14 @@ export default function RelatorioTurmas() {
     setEditingTurma(turma);
     setTurmaFields({ nomeEscola: turma.nomeEscola, anoTurma: turma.anoTurma });
     setTurmaModalOpen(true);
+    setAutoFocusInput('nomeEscola'); // Set focus to nomeEscola
   };
 
   const handleEditAluno = (aluno: Aluno) => {
     setEditingAluno(aluno);
-    setAlunoFields({ nome: aluno.nome, sobrenome: aluno.sobrenome, anoCursando: aluno.anoCursando });
+    setAlunoFields({ nome: aluno.nome, anoCursando: aluno.anoCursando });
     setAlunoModalOpen(true);
+    setAutoFocusInput('nome'); // Set focus to aluno name
   };
 
   const handleUpdateTurma = async () => {
@@ -151,7 +173,7 @@ export default function RelatorioTurmas() {
   };
 
   const handleUpdateAluno = async () => {
-    if (!alunoFields.nome || !alunoFields.sobrenome || alunoFields.anoCursando <= 0) {
+    if (!alunoFields.nome || alunoFields.anoCursando <= 0) {
       showNotification('Todos os campos são obrigatórios!', 'error');
       return;
     }
@@ -161,7 +183,7 @@ export default function RelatorioTurmas() {
       await updateDoc(alunoDocRef, alunoFields);
       setAlunos(alunos.map(aluno => aluno.id === editingAluno.id ? { ...aluno, ...alunoFields } : aluno));
       setEditingAluno(null);
-      setAlunoFields({ nome: '', sobrenome: '', anoCursando: 0 });
+      setAlunoFields({ nome: '', anoCursando: 0 });
       setAlunoModalOpen(false);
       showNotification('Aluno atualizado com sucesso!', 'success');
     }
@@ -174,7 +196,6 @@ export default function RelatorioTurmas() {
     }
   }, [user, loading, router]);
 
-  // Componente Modal
   const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
     if (!isOpen) return null;
 
@@ -195,7 +216,6 @@ export default function RelatorioTurmas() {
     );
   };
 
-  // Componente de Notificação
   const Notification = ({ message, type }: { message: string; type: 'success' | 'error' }) => (
     <div className={`fixed top-5 right-5 p-3 rounded text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
       {message}
@@ -203,14 +223,13 @@ export default function RelatorioTurmas() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2 pb-8 md:pb-0">
       <LogOut />
       <hr />
-      <h1 className="text-2xl md:text-3xl font-bold text-center text-black mb-8">Relatório de Turmas e Alunos</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2"> Relatório de Turmas e Alunos</h1>
 
       {notification && <Notification message={notification.message} type={notification.type} />}
 
-      {/* Tabela de Turmas Cadastradas */}
       <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg mb-8">
         <h2 className="text-xl md:text-3xl font-semibold text-gray-700 mb-4">Relatório de turmas cadastradas</h2>
         <hr className='border-4' />
@@ -230,22 +249,26 @@ export default function RelatorioTurmas() {
           <tbody>
             {turmas.map((turma) => (
               <tr key={turma.id} className='text-sm md:text-1xl border-b border-gray-200 text-gray-800'>
-                <td className="py-1 md:py-2">{turma.nomeEscola}</td>
-                <td className="py-1 md:py-2">{turma.anoTurma}</td>
-                <td className="py-1 md:py-2">{turma.codigoTurma}</td>
-                <td className="py-1 md:py-2">{turma.alunosCount || 0}</td>
-                <td className="py-1 md:py-2">
-                  <button onClick={() => handleEditTurma(turma)} className="bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-900">Editar</button>
-                  <button onClick={() => handleDeleteTurma(turma.id)} className="bg-red-600 text-white py-1 px-2 rounded hover:bg-red-900 ml-2">Excluir</button>
+                <td className="py-1 md:py-1">{turma.nomeEscola}</td>
+                <td className="py-1 md:py-1">{turma.anoTurma}</td>
+                <td className="py-1 md:py-1">{turma.codigoTurma}</td>
+                <td className="py-1 md:py-1">{turma.alunosCount || 0}</td>
+                <td className="py-1 md:py-1 flex items-center">
+                  <button onClick={() => handleEditTurma(turma)} className="bg-purple-600 text-white p-2 rounded hover:bg-purple-900 flex items-center">
+                    <PencilIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                  </button>
+                  <button onClick={() => handleDeleteTurma(turma.id)} className="bg-red-600 text-white p-2 rounded hover:bg-red-900 ml-2 flex items-center">
+                    <TrashIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                  </button>
                 </td>
+
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Seleção de Turma e Alunos */}
-      <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg mb-8">
+      <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg">
         <h2 className="text-xl md:text-3xl font-semibold text-gray-700 mb-4">Relatório de alunos por turma</h2>
         <hr className='border-4 mb-2' />
 
@@ -260,8 +283,7 @@ export default function RelatorioTurmas() {
         <table className="w-full border-t border-b">
           <thead>
             <tr className='text-sm md:text-1xl bg-gray-200 border-2 border-y-black'>
-              <th className="text-left text-black py-1 md:py-2">Nome</th>
-              <th className="text-left text-black py-1 md:py-2">Sobrenome</th>
+              <th className="text-left text-black py-1 md:py-2">Nome Completo</th>
               <th className="text-left text-black py-1 md:py-2">Ano Cursando</th>
               <th className="text-left text-black py-1 md:py-2">Ações</th>
             </tr>
@@ -269,65 +291,72 @@ export default function RelatorioTurmas() {
           <tbody>
             {alunos.map((aluno) => (
               <tr key={aluno.id} className='text-sm md:text-1xl border-b border-gray-200 text-gray-800'>
-                <td className="py-1 md:py-2">{aluno.nome}</td>
-                <td className="py-1 md:py-2">{aluno.sobrenome}</td>
-                <td className="py-1 md:py-2">{aluno.anoCursando}</td>
-                <td className="py-1 md:py-2">
-                  <button onClick={() => handleEditAluno(aluno)} className="bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-900">Editar</button>
-                  <button onClick={() => handleDeleteAluno(aluno.id)} className="bg-red-600 text-white py-1 px-2 rounded hover:bg-red-900 ml-2">Excluir</button>
+                <td>{aluno.nome}</td>
+                <td>{aluno.anoCursando}</td>
+                <td className="flex items-center">
+                  <button onClick={() => handleEditAluno(aluno)} className="bg-purple-600 text-white p-2 rounded hover:bg-purple-900 flex items-center">
+                    <PencilIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                  </button>
+                  <button onClick={() => handleDeleteAluno(aluno.id)}  className="bg-red-600 text-white p-2 rounded hover:bg-red-900 ml-2 flex items-center">
+                    <TrashIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+     
       </div>
-
+   
       {/* Modais de Edição */}
-      {/* Para o Modal de Edição de Turma */}
       <Modal isOpen={isTurmaModalOpen} onClose={() => setTurmaModalOpen(false)} title="Editar Turma">
         <label className='text-gray-500 text-lg'> Nome da Escola: </label>
         <input
           type="text"
           placeholder="Nome da Escola"
           value={turmaFields.nomeEscola}
+          ref={nomeEscolaRef}
+          onFocus={() => setAutoFocusInput('nomeEscola')}
           onChange={(e) => setTurmaFields({ ...turmaFields, nomeEscola: e.target.value })}
           className="border p-2 mb-2 w-full text-black"
+          autoFocus={autoFocusInput === 'nomeEscola'}
         />
         <label className='text-gray-500 text-lg'> Ano da Turma: </label>
         <input
           type="text"
           placeholder="Ano da Turma"
           value={turmaFields.anoTurma}
+          ref={anoTurmaRef}
+          onFocus={() => setAutoFocusInput('anoTurma')}
           onChange={(e) => setTurmaFields({ ...turmaFields, anoTurma: e.target.value })}
           className="border p-2 mb-2 w-full text-black"
+          autoFocus={autoFocusInput === 'anoTurma'}
         />
       </Modal>
 
-      {/* Para o Modal de Edição de Aluno */}
       <Modal isOpen={isAlunoModalOpen} onClose={() => setAlunoModalOpen(false)} title="Editar Aluno">
         <label className='text-gray-500 text-lg'> Nome Aluno: </label>
         <input
           type="text"
           placeholder="Nome"
           value={alunoFields.nome}
+          ref={alunoNomeRef}
+          onFocus={() => setAutoFocusInput('nome')}
           onChange={(e) => setAlunoFields({ ...alunoFields, nome: e.target.value })}
           className="border p-2 mb-2 w-full text-black"
+          autoFocus={autoFocusInput === 'nome'}
         />
-        <label className='text-gray-500 text-lg'> Sobrenome: </label>
-        <input
-          type="text"
-          placeholder="Sobrenome"
-          value={alunoFields.sobrenome}
-          onChange={(e) => setAlunoFields({ ...alunoFields, sobrenome: e.target.value })}
-          className="border p-2 mb-2 w-full text-black"
-        />
+
         <label className='text-gray-500 text-lg'> Série que está cursando: </label>
         <input
-          type="number"
+          type="text"
           placeholder="Ano Cursando"
           value={alunoFields.anoCursando}
+          ref={alunoAnoCursandoRef}
+          onFocus={() => setAutoFocusInput('anoCursando')}
           onChange={(e) => setAlunoFields({ ...alunoFields, anoCursando: parseInt(e.target.value) })}
           className="border p-2 mb-2 w-full text-black"
+          autoFocus={autoFocusInput === 'anoCursando'}
         />
       </Modal>
 

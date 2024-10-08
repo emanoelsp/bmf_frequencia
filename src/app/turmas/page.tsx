@@ -21,7 +21,7 @@ export default function Turmas() {
     <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-1">Gerenciamento de Turmas</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2"> Gerenciamento de Turmas</h1>
 
       {/* Seção de Botões */}
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">

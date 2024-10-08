@@ -97,10 +97,10 @@ export default function Inicio() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
+    <div className="min-h-screen bg-gray-100 p-0 mb-8 md:mb-0 md:p-2">
       <LogOut />
-      <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Estatísticas de Turmas e Frequência</h1>
+   
+      <h1 className="text-3xl font-bold text-center text-gray-800 mt-2">Estatísticas de Turmas e Frequência</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -111,7 +111,7 @@ export default function Inicio() {
 
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Total de Turmas</h2>
-          <p className="text-5xl font-bold text-green-500">{totalTurmas}</p>
+          <p className="text-5xl font-bold text-purple-500">{totalTurmas}</p>
           <p className="text-gray-500 mt-2">Total de turmas cadastradas</p>
         </div>
 
@@ -135,7 +135,7 @@ export default function Inicio() {
 
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Total de Dias Letivos</h2>
-          <p className="text-5xl font-bold text-blue-500">{totalDiasLetivos}</p>
+          <p className="text-5xl font-bold text-yellow-500">{totalDiasLetivos}</p>
           <p className="text-gray-500 mt-2">Total de dias com frequência registrada</p>
         </div>
       </div>

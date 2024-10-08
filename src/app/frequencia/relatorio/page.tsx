@@ -178,7 +178,7 @@ export default function Relatorios() {
     <div className="min-h-screen bg-gray-100 p-0 md:p-2">
       <LogOut />
       <hr />
-      <h1 className="text-lg md:text-2xl font-bold text-center text-black mb-4 md:mb-8">
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">
         Relatório de Frequência
       </h1>
       <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg max-w-4xl mx-auto mb-4 md:mb-8">
