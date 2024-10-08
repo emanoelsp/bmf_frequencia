@@ -23,6 +23,9 @@ export default function RootLayout({
         <div className="hidden md:block">
           <Header />
         </div>
+        <div className='block md:hidden'>
+          <h1 className="text-2xl font-bold p-2 text-white text-center">BOTANDO A MÃO E FAZENDO</h1>
+        </div>
         <main className="w-full max-h-[1800px] pb-10 md:pb-0">{children}
         <div className="hidden md:block">
           <Footer />

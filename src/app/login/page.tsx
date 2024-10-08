@@ -26,9 +26,7 @@ export default function Login() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className='block md:hidden'>
-      <h2 className="text-2xl font-bold text-center p-4 mb-6 text-black mt-0">BOTANDO A MÃO E FAZENDO</h2>
-      </div>
+   
       <div className="bg-white p-10 border-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-3xl font-bold text-center text-gray-700">Login</h2>
         {error && <p className="text-red-500 text-center mt-2">{error}</p>}

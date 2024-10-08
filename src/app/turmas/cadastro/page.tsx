@@ -230,6 +230,9 @@ export default function Cadastro() {
           </div>
         </form>
       </div>
+      <br />
+      <br />
+      <br />
     </div>
   );
 }

@@ -58,7 +58,6 @@ export default function RelatorioTurmasFrequencia() {
   const handleTurmaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const turmaId = e.target.value;
     setTurmaSelecionada(turmaId);
-    setPresenca({});
 
     if (turmaId) {
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
@@ -67,9 +66,21 @@ export default function RelatorioTurmasFrequencia() {
         id: doc.id,
         ...doc.data(),
       })) as Aluno[];
+
+      // Ordena os alunos por nome
+      alunosData.sort((a, b) => a.nome.localeCompare(b.nome));
+
+      // Inicializa a presença com todos os alunos marcados como true
+      const presencaInicial = alunosData.reduce((acc, aluno) => {
+        acc[aluno.id] = true; // Marca todos como presentes
+        return acc;
+      }, {} as { [key: string]: boolean });
+
       setAlunos(alunosData);
+      setPresenca(presencaInicial); // Define o estado da presença
     } else {
       setAlunos([]);
+      setPresenca({}); // Limpa a presença se não houver turma
     }
   };
 
@@ -129,7 +140,7 @@ export default function RelatorioTurmasFrequencia() {
     <div className="min-h-screen bg-gray-100 p-0 md:p-2 relative">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2"> Cadastrar frequência dos alunos</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">Cadastrar frequência dos alunos</h1>
 
       {/* Notificação */}
       {notification.message && (
@@ -138,7 +149,7 @@ export default function RelatorioTurmasFrequencia() {
         </div>
       )}
 
-      <div className="bg-white border-8 p-4 rounded-lg shadow-lg">
+      <div className="bg-white border-8 p-4 mb-8 rounded-lg shadow-lg">
         <div className="mb-8">
           <h2 className="text-1xl md:text-3xl font-semibold text-gray-700 mb-4">Registro de frequência</h2>
           <hr className='border-4' />
