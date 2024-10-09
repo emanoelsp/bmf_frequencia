@@ -94,7 +94,7 @@ export default function Cadastro() {
     }
 
     const turmaSelecionada = turmas.find(turma => turma.id === turmaId);
-    
+
     if (!turmaSelecionada) {
       showNotification('Turma não encontrada!', 'error');
       return;
@@ -107,7 +107,7 @@ export default function Cadastro() {
       nomeTurma: turmaSelecionada.nomeEscola,
       codigoTurma: turmaSelecionada.codigoTurma,
     };
-  
+
     try {
       await addDoc(alunoCollectionRef, aluno);
       // Limpa apenas o nome do aluno após o cadastro
@@ -178,7 +178,37 @@ export default function Cadastro() {
       <div className="bg-white border-8 p-4 rounded-lg shadow-lg mx-auto">
         <h2 className="text-3xl font-semibold text-gray-700 mb-4">Cadastro de Alunos</h2>
         <hr className='border-4' />
+        <div className="mb-4">
+          <label htmlFor="turmaSelect" className="block text-gray-600 mb-2">Selecione a Turma</label>
+          <select
+            id="turmaSelect"
+            value={turmaId}
+            onChange={(e) => setTurmaId(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Selecione uma turma</option>
+            {turmas.map((turma) => (
+              <option key={turma.id} value={turma.id}>
+                {turma.nomeEscola} - {turma.anoTurma} (Código: {turma.codigoTurma})
+              </option>
+            ))}
+          </select>
 
+          {/* Exibe os detalhes da turma selecionada */}
+          {turmaId && (
+            <div className="mt-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
+              <h3 className="font-bold">Detalhes da Turma Selecionada: </h3>
+              <h1 className='text-lg md:text-2xl text-blue-700'>
+                Escola: {turmas.find(t => t.id === turmaId)?.nomeEscola}
+              </h1>
+              <h2 className='text-md md:text-lg text-blue-700'>
+                Turma: {turmas.find(t => t.id === turmaId)?.anoTurma} - {turmas.find(t => t.id === turmaId)?.codigoTurma}
+              </h2>
+            </div>
+          )}
+        </div>
+
+        <hr className='border-4' />
         <h4 className="mt-2 text-1xl font-semibold text-gray-700 mb-4">Preencha os dados dos alunos abaixo:</h4>
 
         <form onSubmit={handleSubmitAluno}>
@@ -205,26 +235,11 @@ export default function Cadastro() {
                 placeholder="Digite o ano que o aluno está cursando"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="turmaSelect" className="block text-gray-600 mb-2">Selecione a Turma</label>
-              <select
-                id="turmaSelect"
-                value={turmaId}
-                onChange={(e) => setTurmaId(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Selecione uma turma</option>
-                {turmas.map((turma) => (
-                  <option key={turma.id} value={turma.id}>
-                    {turma.nomeEscola} - {turma.anoTurma} (Código: {turma.codigoTurma})
-                  </option>
-                ))}
-              </select>
-            </div>
+
           </div>
 
           <div className="mt-6">
-            <button className="bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-600 focus:outline-none focus:bg-blue-600 transition duration-150">
+            <button className="bg-blue-600 text-white py-3 px-6 rounded hover:bg-blue-600 focus:outline-none focus:bg-blue-600 transition duration-150">
               Adicionar Aluno
             </button>
           </div>

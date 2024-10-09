@@ -72,7 +72,7 @@ export default function RelatorioTurmas() {
   const handleTurmaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const turmaId = e.target.value;
     setTurmaSelecionada(turmaId);
-  
+
     if (turmaId) {
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
       const alunosSnapshot = await getDocs(alunosQuery);
@@ -80,7 +80,7 @@ export default function RelatorioTurmas() {
         id: doc.id,
         ...doc.data(),
       })) as Aluno[];
-  
+
       // Ordenar os alunos por nome
       const alunosOrdenados = alunosData.sort((a, b) => a.nome.localeCompare(b.nome));
       setAlunos(alunosOrdenados);
@@ -274,13 +274,25 @@ export default function RelatorioTurmas() {
       <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg">
         <h2 className="text-xl md:text-3xl font-semibold text-gray-700 mb-4">Relatório de alunos por turma</h2>
         <hr className='border-4 mb-2' />
-
+        <h2 className="text-xl md:text-1xl font-semibold text-gray-700 mb-4">Selecione a turma:</h2>
         <select value={turmaSelecionada} onChange={handleTurmaChange} className="text-gray-700 border border-gray-300 rounded p-2 mb-4 w-full">
           <option value="">Selecione uma turma</option>
           {turmas.map((turma) => (
             <option key={turma.id} value={turma.id}>{turma.nomeEscola} - {turma.anoTurma}</option>
           ))}
         </select>
+        {turmaSelecionada && (
+          <div className="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
+            <h3 className="font-bold">Detalhes da Turma: </h3>
+            <h1 className='text-lg md:text-2xl text-blue-600'>
+              Escola: {turmas.find(t => t.id === turmaSelecionada)?.nomeEscola}
+            </h1>
+            <h2 className='text-md md:text-lg text-blue-600'>
+              Turma: {turmas.find(t => t.id === turmaSelecionada)?.anoTurma} - {turmas.find(t => t.id === turmaSelecionada)?.codigoTurma}
+            </h2>
+          </div>
+        )}
+
         <h2 className="text-xl md:text-1xl font-semibold text-gray-700 mb-4">Lista de alunos:</h2>
 
         <table className="w-full border-t border-b">
@@ -300,7 +312,7 @@ export default function RelatorioTurmas() {
                   <button onClick={() => handleEditAluno(aluno)} className="bg-purple-600 text-white p-2 rounded hover:bg-purple-900 flex items-center">
                     <PencilIcon className="h-4 w-4 mr-1" aria-hidden="true" />
                   </button>
-                  <button onClick={() => handleDeleteAluno(aluno.id)}  className="bg-red-600 text-white p-2 rounded hover:bg-red-900 ml-2 flex items-center">
+                  <button onClick={() => handleDeleteAluno(aluno.id)} className="bg-red-600 text-white p-2 rounded hover:bg-red-900 ml-2 flex items-center">
                     <TrashIcon className="h-4 w-4 mr-1" aria-hidden="true" />
                   </button>
                 </td>
@@ -308,9 +320,9 @@ export default function RelatorioTurmas() {
             ))}
           </tbody>
         </table>
-     
+
       </div>
-   
+
       {/* Modais de Edição */}
       <Modal isOpen={isTurmaModalOpen} onClose={() => setTurmaModalOpen(false)} title="Editar Turma">
         <label className='text-gray-500 text-lg'> Nome da Escola: </label>

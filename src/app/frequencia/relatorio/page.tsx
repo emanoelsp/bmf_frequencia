@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
-import { firestore } from '../../lib/firebaseConfig'; 
+import { firestore } from '../../lib/firebaseConfig';
 import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
 import LogOut from '../../components/logout';
 import { UserIcon, XCircleIcon, PencilIcon } from '@heroicons/react/24/solid';
@@ -11,7 +11,7 @@ interface Aluno {
   id: string;
   nome: string;
   anoCursando: number;
-  frequencias: { [key: string]: boolean }; 
+  frequencias: { [key: string]: boolean };
 }
 
 interface Turma {
@@ -22,9 +22,9 @@ interface Turma {
 }
 
 interface Frequencia {
-  id: string; 
+  id: string;
   data: string;
-  presencas: { [key: string]: boolean }; 
+  presencas: { [key: string]: boolean };
 }
 
 export default function Relatorios() {
@@ -40,9 +40,9 @@ export default function Relatorios() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
-    if (loading) return; 
+    if (loading) return;
     if (!user) {
-      router.push('/login'); 
+      router.push('/login');
     } else {
       fetchTurmas();
     }
@@ -98,7 +98,7 @@ export default function Relatorios() {
     const frequenciaCollectionRef = collection(firestore, 'frequencia_diaria');
     const frequenciaQuery = query(frequenciaCollectionRef, where('turmaId', '==', turmaId));
     const frequenciaDocs = await getDocs(frequenciaQuery);
-    
+
     const frequenciasData = frequenciaDocs.docs.map(doc => {
       const data = doc.data();
       const presencas = data.alunos.reduce((acc: { [key: string]: boolean }, aluno: { nome: string; presenca: string }) => {
@@ -129,7 +129,7 @@ export default function Relatorios() {
     setNotification({ message, type });
     setTimeout(() => {
       setNotification(null);
-    }, 3000); 
+    }, 3000);
   };
 
   const handleUpdate = async () => {
@@ -145,7 +145,7 @@ export default function Relatorios() {
         updatedAlunos[alunoEditando.nome] = alunoPresenca === 'V';
 
         // Atualiza a frequência no Firestore
-        await updateDoc(frequenciaRef, { 
+        await updateDoc(frequenciaRef, {
           alunos: Object.entries(updatedAlunos).map(([nomeCompleto, presenca]) => ({
             nome: nomeCompleto,
             presenca: presenca ? 'V' : 'F',
@@ -177,10 +177,10 @@ export default function Relatorios() {
     }
   };
 
-  if (loading) return <p>Loading...</p>; 
+  if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 mb-8 md:p-2 md:mb-0">
+    <div className="min-h-screen bg-gray-100 mb-8 md:p- md:mb-0">
       <LogOut />
       <hr />
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">
@@ -209,6 +209,19 @@ export default function Relatorios() {
         </form>
       </div>
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg mx-auto border-8 overflow-x-auto">
+        {/* Exibe os detalhes da turma selecionada */}
+        {turmaSelecionada && (
+          <div className="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
+            <h3 className="font-bold">Detalhes da Turma: </h3>
+            <h1 className='text-lg md:text-2xl text-blue-600'>
+              Escola: {turmas.find(t => t.id === turmaSelecionada)?.nomeEscola}
+            </h1>
+            <h2 className='text-md md:text-lg text-blue-600'>
+              Turma: {turmas.find(t => t.id === turmaSelecionada)?.anoTurma} - {turmas.find(t => t.id === turmaSelecionada)?.codigoTurma}
+            </h2>
+          </div>
+        )}
+
         <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-4">Relatório de Frequência</h2>
         <hr className='border-4 mb-3'></hr>
         <div className="overflow-x-auto">
@@ -236,9 +249,9 @@ export default function Relatorios() {
 
                   return (
                     <tr key={aluno.id} className="border-t text-sm md:text-2lg">
-                      <td className="px-2 md:px-4 py-2 text-black text-center">{aluno.nome}</td>
+                      <td className="px-2 md:px-4 py-1 text-black">{aluno.nome}</td>
                       {frequencias.map(f => (
-                        <td key={f.data} className="px-2 md:px-4 py-2 text-center text-black">
+                        <td key={f.data} className="px-2 md:px-4 py-1 text-center text-black">
                           <div className="flex justify-center items-end h-full">
                             {aluno.frequencias[f.data] ? (
                               <UserIcon className="text-green-500 w-5 h-5" />
@@ -248,8 +261,8 @@ export default function Relatorios() {
                           </div>
                         </td>
                       ))}
-                      <td className="px-2 md:px-4 py-2 text-center text-black">{percentualPresenca.toFixed(2)}%</td>
-                      <td className="px-2 md:px-4 py-2 text-center text-black">
+                      <td className="px-2 md:px-4 py-1 text-center text-black">{percentualPresenca.toFixed(2)}%</td>
+                      <td className="px-2 md:px-4 py-1 text-center text-black">
                         <button
                           onClick={() => handleEdit(aluno)}
                           className="bg-purple-500 text-white rounded hover:bg-purple-700 p-1"
@@ -288,7 +301,7 @@ export default function Relatorios() {
                 ))}
               </div>
               <div className="mt-4 flex justify-end">
-                <button onClick={handleUpdate} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">Salvar</button>
+                <button onClick={handleUpdate} className="bg-purple-500 text-white px-4 py-2 rounded mr-2 hover:bg-purple-700">Atualizar</button>
                 <button onClick={() => setIsModalOpen(false)} className="bg-gray-300 text-black px-4 py-2 rounded">Cancelar</button>
               </div>
             </div>

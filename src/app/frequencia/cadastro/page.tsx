@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/auseAuth';
@@ -30,6 +30,7 @@ export default function RelatorioTurmasFrequencia() {
   const [turmaSelecionada, setTurmaSelecionada] = useState<string>('');
   const [data, setData] = useState<string>('');
   const [presenca, setPresenca] = useState<{ [key: string]: boolean }>({});
+  const [turmaDetalhes, setTurmaDetalhes] = useState<Turma | null>(null); // Novo estado para detalhes da turma
   
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | null }>({
     message: '',
@@ -60,6 +61,9 @@ export default function RelatorioTurmasFrequencia() {
     setTurmaSelecionada(turmaId);
 
     if (turmaId) {
+      const selectedTurma = turmas.find(turma => turma.id === turmaId);
+      setTurmaDetalhes(selectedTurma || null); // Atualiza os detalhes da turma selecionada
+
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
       const alunosSnapshot = await getDocs(alunosQuery);
       const alunosData = alunosSnapshot.docs.map(doc => ({
@@ -70,17 +74,17 @@ export default function RelatorioTurmasFrequencia() {
       // Ordena os alunos por nome
       alunosData.sort((a, b) => a.nome.localeCompare(b.nome));
 
-      // Inicializa a presença com todos os alunos marcados como true
       const presencaInicial = alunosData.reduce((acc, aluno) => {
         acc[aluno.id] = true; // Marca todos como presentes
         return acc;
       }, {} as { [key: string]: boolean });
 
       setAlunos(alunosData);
-      setPresenca(presencaInicial); // Define o estado da presença
+      setPresenca(presencaInicial);
     } else {
       setAlunos([]);
-      setPresenca({}); // Limpa a presença se não houver turma
+      setPresenca({});
+      setTurmaDetalhes(null); // Limpa os detalhes da turma se não houver turma
     }
   };
 
@@ -113,6 +117,7 @@ export default function RelatorioTurmasFrequencia() {
       setData('');
       setTurmaSelecionada('');
       setAlunos([]);
+      setTurmaDetalhes(null); // Limpa os detalhes da turma após salvar
     } catch (error) {
       console.error('Erro ao salvar a frequência: ', error);
       setNotification({
@@ -121,7 +126,6 @@ export default function RelatorioTurmasFrequencia() {
       });
     }
 
-    // Remove a notificação após 3 segundos
     setTimeout(() => {
       setNotification({ message: '', type: null });
     }, 3000);
@@ -180,6 +184,17 @@ export default function RelatorioTurmasFrequencia() {
             onChange={(e) => setData(e.target.value)}
           />
         </div>
+        
+        {/* Exibe os detalhes da turma e data selecionada */}
+        {turmaDetalhes && data && (
+          <div className="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
+            <h3 className="font-bold">Detalhes da Frequência: </h3>
+            <p>Escola: {turmaDetalhes.nomeEscola}</p>
+            <p>Turma: {turmaDetalhes.anoTurma} - {turmaDetalhes.codigoTurma}</p>
+            <p>Data: {data}</p>
+          </div>
+        )}
+        
         <hr className='border-4' />
 
         <h2 className="mt-2 text-1xl md:text-xl font-semibold text-black mb-4">Lista de Alunos Cadastrados:</h2>
@@ -220,6 +235,9 @@ export default function RelatorioTurmasFrequencia() {
           </button>
         </div>
       </div>
+      <br />
+      <br />
+      <br />
     </div>
   );
 }

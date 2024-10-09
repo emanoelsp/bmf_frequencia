@@ -12,6 +12,8 @@
     "@heroicons/react": "^2.1.5",
     "auth": "^1.1.1",
     "firebase": "^10.13.2",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.3",
     "next": "14.2.13",
     "next-auth": "^4.24.8",
     "react": "^18",
