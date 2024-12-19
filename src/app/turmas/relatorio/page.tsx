@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 interface Aluno {
   id: string;
@@ -41,9 +40,8 @@ export default function RelatorioTurmas() {
   const [isAlunoModalOpen, setAlunoModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const [autoFocusInput, setAutoFocusInput] = useState<string | null>(null); // New state for autofocus
+  const [autoFocusInput, setAutoFocusInput] = useState<string | null>(null);
 
-  // Refs for inputs
   const nomeEscolaRef = useRef<HTMLInputElement>(null);
   const anoTurmaRef = useRef<HTMLInputElement>(null);
   const alunoNomeRef = useRef<HTMLInputElement>(null);
@@ -82,7 +80,6 @@ export default function RelatorioTurmas() {
         ...doc.data(),
       })) as Aluno[];
 
-      // Ordenar os alunos por nome
       const alunosOrdenados = alunosData.sort((a, b) => a.nome.localeCompare(b.nome));
       setAlunos(alunosOrdenados);
     } else {
@@ -149,14 +146,14 @@ export default function RelatorioTurmas() {
     setEditingTurma(turma);
     setTurmaFields({ nomeEscola: turma.nomeEscola, anoTurma: turma.anoTurma });
     setTurmaModalOpen(true);
-    setAutoFocusInput('nomeEscola'); // Set focus to nomeEscola
+    setAutoFocusInput('nomeEscola');
   };
 
   const handleEditAluno = (aluno: Aluno) => {
     setEditingAluno(aluno);
     setAlunoFields({ nome: aluno.nome, anoCursando: aluno.anoCursando });
     setAlunoModalOpen(true);
-    setAutoFocusInput('nome'); // Set focus to aluno name
+    setAutoFocusInput('nome');
   };
 
   const handleUpdateTurma = async () => {
@@ -229,55 +226,82 @@ export default function RelatorioTurmas() {
   const generatePDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10;
+    let yOffset = margin;
+
+    // Helper function to create table
+    const createTable = (headers: string[], data: (string | number)[][], startY: number) => {
+      const cellWidth = (pageWidth - 2 * margin) / headers.length;
+      const cellHeight = 10;
+      let currentY = startY;
+
+      // Draw header
+      doc.setFillColor(200, 200, 200);
+      doc.rect(margin, currentY, pageWidth - 2 * margin, cellHeight, 'F');
+      doc.setTextColor(0);
+      doc.setFontSize(10);
+      headers.forEach((header, index) => {
+        doc.text(header, margin + cellWidth * index + 2, currentY + 7);
+      });
+      currentY += cellHeight;
+
+      // Draw rows
+      data.forEach((row) => {
+        if (currentY + cellHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+        doc.setFillColor(255, 255, 255);
+        doc.rect(margin, currentY, pageWidth - 2 * margin, cellHeight, 'F');
+        row.forEach((cell, cellIndex) => {
+          doc.text(cell.toString(), margin + cellWidth * cellIndex + 2, currentY + 7);
+        });
+        currentY += cellHeight;
+      });
+
+      return currentY;
+    };
 
     // Add title
     doc.setFontSize(16);
-    doc.text('Relatório de Turmas e Alunos', pageWidth / 2, 20, { align: 'center' });
+    doc.text('Relatório de Turmas e Alunos', pageWidth / 2, yOffset, { align: 'center' });
+    yOffset += 10;
 
     // Add date
     doc.setFontSize(12);
     const currentDate = new Date().toLocaleDateString('pt-BR');
-    doc.text(currentDate, pageWidth - 10, 10, { align: 'right' });
+    doc.text(currentDate, pageWidth - margin, margin, { align: 'right' });
+    yOffset += 10;
 
     // Turmas table
-    const turmasTableData = turmas.map(turma => [
+    const turmasHeaders = ['Nome da Escola', 'Ano da Turma', 'Código da Turma', 'Número de Alunos'];
+    const turmasData = turmas.map(turma => [
       turma.nomeEscola,
       turma.anoTurma,
       turma.codigoTurma,
       turma.alunosCount || 0,
     ]);
 
-    const turmasHeaders = ['Nome da Escola', 'Ano da Turma', 'Código da Turma', 'Número de Alunos'];
-
-    (doc as any).autoTable({
-      head: [turmasHeaders],
-      body: turmasTableData,
-      startY: 30,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
-    });
+    yOffset = createTable(turmasHeaders, turmasData, yOffset);
 
     // Alunos table (if a turma is selected)
     if (turmaSelecionada) {
       doc.addPage();
+      yOffset = margin;
+
       const turma = turmas.find(t => t.id === turmaSelecionada);
       doc.setFontSize(14);
-      doc.text(`Alunos da Turma: ${turma?.nomeEscola} - ${turma?.anoTurma}`, pageWidth / 2, 20, { align: 'center' });
+      doc.text(`Alunos da Turma: ${turma?.nomeEscola} - ${turma?.anoTurma}`, pageWidth / 2, yOffset, { align: 'center' });
+      yOffset += 10;
 
-      const alunosTableData = alunos.map(aluno => [
+      const alunosHeaders = ['Nome Completo', 'Ano Cursando'];
+      const alunosData = alunos.map(aluno => [
         aluno.nome,
         aluno.anoCursando,
       ]);
 
-      const alunosHeaders = ['Nome Completo', 'Ano Cursando'];
-
-      (doc as any).autoTable({
-        head: [alunosHeaders],
-        body: alunosTableData,
-        startY: 30,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
-      });
+      createTable(alunosHeaders, alunosData, yOffset);
     }
 
     doc.save('relatorio_turmas_alunos.pdf');
@@ -322,7 +346,6 @@ export default function RelatorioTurmas() {
                     <TrashIcon className="h-4 w-4 mr-1" aria-hidden="true" />
                   </button>
                 </td>
-
               </tr>
             ))}
           </tbody>
@@ -378,7 +401,6 @@ export default function RelatorioTurmas() {
             ))}
           </tbody>
         </table>
-
       </div>
 
       {/* Modais de Edição */}
@@ -441,7 +463,6 @@ export default function RelatorioTurmas() {
           Gerar PDF
         </button>
       </div>
-
     </div>
   );
 }

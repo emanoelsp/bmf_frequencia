@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 interface Disciplina {
   id: string;
@@ -80,30 +79,61 @@ export default function RelatorioDisciplinas() {
   const generatePDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10;
+    let yOffset = margin;
+
+    // Helper function to create table
+    const createTable = (headers: string[], data: (string | number)[][], startY: number) => {
+      const cellWidth = (pageWidth - 2 * margin) / headers.length;
+      const cellHeight = 10;
+      let currentY = startY;
+
+      // Draw header
+      doc.setFillColor(200, 200, 200);
+      doc.rect(margin, currentY, pageWidth - 2 * margin, cellHeight, 'F');
+      doc.setTextColor(0);
+      doc.setFontSize(10);
+      headers.forEach((header, index) => {
+        doc.text(header, margin + cellWidth * index + 2, currentY + 7);
+      });
+      currentY += cellHeight;
+
+      // Draw rows
+      data.forEach((row) => {
+        if (currentY + cellHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+        doc.setFillColor(255, 255, 255);
+        doc.rect(margin, currentY, pageWidth - 2 * margin, cellHeight, 'F');
+        row.forEach((cell, cellIndex) => {
+          doc.text(cell.toString(), margin + cellWidth * cellIndex + 2, currentY + 7);
+        });
+        currentY += cellHeight;
+      });
+
+      return currentY;
+    };
 
     // Add title
     doc.setFontSize(16);
-    doc.text('Relatório de Disciplinas e Professores', pageWidth / 2, 20, { align: 'center' });
+    doc.text('Relatório de Disciplinas e Professores', pageWidth / 2, yOffset, { align: 'center' });
+    yOffset += 10;
 
     // Add date
     doc.setFontSize(12);
     const currentDate = new Date().toLocaleDateString('pt-BR');
-    doc.text(currentDate, pageWidth - 10, 10, { align: 'right' });
+    doc.text(currentDate, pageWidth - margin, margin, { align: 'right' });
+    yOffset += 10;
 
+    const headers = ['Disciplina', 'Professor'];
     const tableData = disciplinas.map(disciplina => [
       disciplina.nomeDisciplina,
       disciplina.nomeProfessor,
     ]);
 
-    const headers = ['Disciplina', 'Professor'];
-
-    (doc as any).autoTable({
-      head: [headers],
-      body: tableData,
-      startY: 30,
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
-    });
+    createTable(headers, tableData, yOffset);
 
     doc.save('relatorio_disciplinas_professores.pdf');
   };

@@ -7,7 +7,6 @@ import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/fire
 import LogOut from '../../components/logout';
 import { UserIcon, XCircleIcon, PencilIcon } from '@heroicons/react/24/solid';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 interface Aluno {
   id: string;
@@ -188,7 +187,44 @@ export default function Relatorios() {
   const generatePDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10;
+    let yOffset = margin;
+
     const turma = turmas.find(t => t.id === turmaSelecionada);
+
+    // Helper function to create table
+    const createTable = (headers: string[], data: (string | number)[][], startY: number) => {
+      const cellWidth = (pageWidth - 2 * margin) / headers.length;
+      const cellHeight = 10;
+      let currentY = startY;
+
+      // Draw header
+      doc.setFillColor(200, 200, 200);
+      doc.rect(margin, currentY, pageWidth - 2 * margin, cellHeight, 'F');
+      doc.setTextColor(0);
+      doc.setFontSize(10);
+      headers.forEach((header, index) => {
+        doc.text(header, margin + cellWidth * index + 2, currentY + 7);
+      });
+      currentY += cellHeight;
+
+      // Draw rows
+      data.forEach((row) => {
+        if (currentY + cellHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+        doc.setFillColor(255, 255, 255);
+        doc.rect(margin, currentY, pageWidth - 2 * margin, cellHeight, 'F');
+        row.forEach((cell, cellIndex) => {
+          doc.text(cell.toString(), margin + cellWidth * cellIndex + 2, currentY + 7);
+        });
+        currentY += cellHeight;
+      });
+
+      return currentY;
+    };
 
     // Add school name on the left
     doc.setFontSize(12);
@@ -206,6 +242,8 @@ export default function Relatorios() {
     doc.setFontSize(12);
     doc.text(`Turma: ${turma?.anoTurma} - ${turma?.codigoTurma}`, pageWidth / 2, 30, { align: 'center' });
 
+    yOffset = 40;
+
     if (tipoRelatorio === 'frequencia') {
       const tableData = alunos.map(aluno => {
         const rowData = [aluno.nome];
@@ -221,13 +259,7 @@ export default function Relatorios() {
 
       const headers = ['Nome Completo', ...frequencias.map(f => f.data), 'Percentual de Presença'];
 
-      (doc as any).autoTable({
-        head: [headers],
-        body: tableData,
-        startY: 40,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
-      });
+      createTable(headers, tableData, yOffset);
     } else {
       const tableData = frequencias.map(f => [
         f.data,
@@ -238,13 +270,7 @@ export default function Relatorios() {
 
       const headers = ['Data', 'Disciplina', 'Professor', 'Conteúdo'];
 
-      (doc as any).autoTable({
-        head: [headers],
-        body: tableData,
-        startY: 40,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
-      });
+      createTable(headers, tableData, yOffset);
     }
 
     doc.save(`relatorio_${tipoRelatorio}_${turma?.anoTurma}_${turma?.codigoTurma}.pdf`);
