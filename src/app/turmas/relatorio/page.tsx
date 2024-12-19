@@ -7,7 +7,8 @@ import { useAuth } from '../../hooks/auseAuth';
 import { useRouter } from 'next/navigation';
 import LogOut from '@/app/components/logout';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
-
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface Aluno {
   id: string;
@@ -225,6 +226,63 @@ export default function RelatorioTurmas() {
     </div>
   );
 
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Relatório de Turmas e Alunos', pageWidth / 2, 20, { align: 'center' });
+
+    // Add date
+    doc.setFontSize(12);
+    const currentDate = new Date().toLocaleDateString('pt-BR');
+    doc.text(currentDate, pageWidth - 10, 10, { align: 'right' });
+
+    // Turmas table
+    const turmasTableData = turmas.map(turma => [
+      turma.nomeEscola,
+      turma.anoTurma,
+      turma.codigoTurma,
+      turma.alunosCount || 0,
+    ]);
+
+    const turmasHeaders = ['Nome da Escola', 'Ano da Turma', 'Código da Turma', 'Número de Alunos'];
+
+    (doc as any).autoTable({
+      head: [turmasHeaders],
+      body: turmasTableData,
+      startY: 30,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
+    });
+
+    // Alunos table (if a turma is selected)
+    if (turmaSelecionada) {
+      doc.addPage();
+      const turma = turmas.find(t => t.id === turmaSelecionada);
+      doc.setFontSize(14);
+      doc.text(`Alunos da Turma: ${turma?.nomeEscola} - ${turma?.anoTurma}`, pageWidth / 2, 20, { align: 'center' });
+
+      const alunosTableData = alunos.map(aluno => [
+        aluno.nome,
+        aluno.anoCursando,
+      ]);
+
+      const alunosHeaders = ['Nome Completo', 'Ano Cursando'];
+
+      (doc as any).autoTable({
+        head: [alunosHeaders],
+        body: alunosTableData,
+        startY: 30,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
+      });
+    }
+
+    doc.save('relatorio_turmas_alunos.pdf');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-0 md:p-2 pb-8 md:pb-0">
       <LogOut />
@@ -375,6 +433,16 @@ export default function RelatorioTurmas() {
         />
       </Modal>
 
+      <div className="mt-6 text-center pb-6">
+        <button
+          onClick={generatePDF}
+          className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 focus:outline-none focus:bg-green-600 transition duration-150"
+        >
+          Gerar PDF
+        </button>
+      </div>
+
     </div>
   );
 }
+

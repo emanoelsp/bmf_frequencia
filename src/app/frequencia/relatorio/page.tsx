@@ -6,6 +6,8 @@ import { firestore } from '../../lib/firebaseConfig';
 import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
 import LogOut from '../../components/logout';
 import { UserIcon, XCircleIcon, PencilIcon } from '@heroicons/react/24/solid';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface Aluno {
   id: string;
@@ -25,6 +27,10 @@ interface Frequencia {
   id: string;
   data: string;
   presencas: { [key: string]: boolean };
+  disciplinaId: string;
+  nomeDisciplina: string;
+  nomeProfessor: string;
+  conteudoDiario: string;
 }
 
 export default function Relatorios() {
@@ -38,6 +44,7 @@ export default function Relatorios() {
   const [edicoes, setEdicoes] = useState<{ [key: string]: boolean }>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [tipoRelatorio, setTipoRelatorio] = useState<'frequencia' | 'conteudo'>('frequencia');
 
   useEffect(() => {
     if (loading) return;
@@ -110,10 +117,13 @@ export default function Relatorios() {
         id: doc.id,
         data: data.data,
         presencas,
+        disciplinaId: data.disciplinaId,
+        nomeDisciplina: data.nomeDisciplina,
+        nomeProfessor: data.nomeProfessor,
+        conteudoDiario: data.conteudoDiario,
       } as Frequencia;
     });
 
-    // Ordenar frequências pela data
     frequenciasData.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
     return frequenciasData;
@@ -141,10 +151,8 @@ export default function Relatorios() {
         const alunoPresenca = edicoes[frequencia.data] ? 'V' : 'F';
         const updatedAlunos = { ...frequencia.presencas };
 
-        // Atualiza apenas a presença do aluno que está sendo editado
         updatedAlunos[alunoEditando.nome] = alunoPresenca === 'V';
 
-        // Atualiza a frequência no Firestore
         await updateDoc(frequenciaRef, {
           alunos: Object.entries(updatedAlunos).map(([nomeCompleto, presenca]) => ({
             nome: nomeCompleto,
@@ -177,14 +185,79 @@ export default function Relatorios() {
     }
   };
 
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const turma = turmas.find(t => t.id === turmaSelecionada);
+
+    // Add school name on the left
+    doc.setFontSize(12);
+    doc.text(turma?.nomeEscola || 'Escola', 10, 10);
+
+    // Add date on the right
+    const currentDate = new Date().toLocaleDateString('pt-BR');
+    doc.text(currentDate, pageWidth - 10, 10, { align: 'right' });
+
+    // Add report title
+    doc.setFontSize(16);
+    doc.text(tipoRelatorio === 'frequencia' ? 'Relatório de Frequência' : 'Relatório de Conteúdo Diário', pageWidth / 2, 20, { align: 'center' });
+
+    // Add class details
+    doc.setFontSize(12);
+    doc.text(`Turma: ${turma?.anoTurma} - ${turma?.codigoTurma}`, pageWidth / 2, 30, { align: 'center' });
+
+    if (tipoRelatorio === 'frequencia') {
+      const tableData = alunos.map(aluno => {
+        const rowData = [aluno.nome];
+        frequencias.forEach(f => {
+          rowData.push(aluno.frequencias[f.data] ? 'P' : 'F');
+        });
+        const totalAulas = frequencias.length;
+        const aulasPresentes = frequencias.filter(f => aluno.frequencias[f.data]).length;
+        const percentualPresenca = totalAulas > 0 ? (aulasPresentes / totalAulas) * 100 : 0;
+        rowData.push(`${percentualPresenca.toFixed(2)}%`);
+        return rowData;
+      });
+
+      const headers = ['Nome Completo', ...frequencias.map(f => f.data), 'Percentual de Presença'];
+
+      (doc as any).autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 40,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
+      });
+    } else {
+      const tableData = frequencias.map(f => [
+        f.data,
+        f.nomeDisciplina,
+        f.nomeProfessor,
+        f.conteudoDiario,
+      ]);
+
+      const headers = ['Data', 'Disciplina', 'Professor', 'Conteúdo'];
+
+      (doc as any).autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 40,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [200, 200, 200], textColor: 20, fontStyle: 'bold' },
+      });
+    }
+
+    doc.save(`relatorio_${tipoRelatorio}_${turma?.anoTurma}_${turma?.codigoTurma}.pdf`);
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 mb-8 md:p- md:mb-0">
+    <div className="min-h-screen bg-gray-100 mb-8 md:p-2 md:mb-0">
       <LogOut />
       <hr />
       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">
-        Relatório de Frequência
+        Relatório de Frequência e Conteúdos
       </h1>
       <div className="bg-white border-8 p-4 md:p-6 rounded-lg shadow-lg max-w-4xl mx-auto mb-4 md:mb-8">
         <h2 className="text-lg md:text-2xl font-semibold text-gray-700 mb-4">Selecionar Turma</h2>
@@ -206,10 +279,23 @@ export default function Relatorios() {
               ))}
             </select>
           </div>
+          {turmaSelecionada && (
+            <div className="mb-4">
+              <label htmlFor="tipoRelatorio" className="block text-black mb-2">Tipo de Relatório:</label>
+              <select
+                id="tipoRelatorio"
+                value={tipoRelatorio}
+                onChange={(e) => setTipoRelatorio(e.target.value as 'frequencia' | 'conteudo')}
+                className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="frequencia">Relatório de Frequência</option>
+                <option value="conteudo">Relatório de Conteúdo Diário</option>
+              </select>
+            </div>
+          )}
         </form>
       </div>
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg mx-auto border-8 overflow-x-auto">
-        {/* Exibe os detalhes da turma selecionada */}
         {turmaSelecionada && (
           <div className="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
             <h3 className="font-bold">Detalhes da Turma: </h3>
@@ -222,66 +308,112 @@ export default function Relatorios() {
           </div>
         )}
 
-        <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-4">Relatório de Frequência</h2>
-        <hr className='border-4 mb-3'></hr>
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto">
-            <thead className='border-2 border-y-black'>
-              <tr className="bg-gray-200 text-sm md:text-2lg">
-                <th className="px-2 md:px-4 py-2 text-left text-center text-black">Nome Completo</th>
-                {frequencias.map(f => (
-                  <th key={f.data} className="text-1sm md:text-sm px-2 md:px-4 py-2 text-center text-black">{f.data}</th>
-                ))}
-                <th className="px-2 md:px-4 py-2 text-center text-black">Percentual de Presença</th>
-                <th className="px-2 md:px-4 py-2 text-center text-black">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alunos.length === 0 ? (
-                <tr>
-                  <td colSpan={frequencias.length + 3} className="text-center text-black">Nenhum aluno encontrado.</td>
-                </tr>
-              ) : (
-                alunos.map((aluno: Aluno) => {
-                  const totalAulas = frequencias.length;
-                  const aulasPresentes = frequencias.filter(f => aluno.frequencias[f.data]).length;
-                  const percentualPresenca = totalAulas > 0 ? (aulasPresentes / totalAulas) * 100 : 0;
-
-                  return (
-                    <tr key={aluno.id} className="border-t text-sm md:text-2lg">
-                      <td className="px-2 md:px-4 py-1 text-black">{aluno.nome}</td>
-                      {frequencias.map(f => (
-                        <td key={f.data} className="px-2 md:px-4 py-1 text-center text-black">
-                          <div className="flex justify-center items-end h-full">
-                            {aluno.frequencias[f.data] ? (
-                              <UserIcon className="text-green-500 w-5 h-5" />
-                            ) : (
-                              <XCircleIcon className="text-red-500 w-5 h-5" />
-                            )}
-                          </div>
-                        </td>
-                      ))}
-                      <td className="px-2 md:px-4 py-1 text-center text-black">{percentualPresenca.toFixed(2)}%</td>
-                      <td className="px-2 md:px-4 py-1 text-center text-black">
-                        <button
-                          onClick={() => handleEdit(aluno)}
-                          className="bg-purple-500 text-white rounded hover:bg-purple-700 p-1"
-                        >
-                          <PencilIcon className="w-5 h-5" />
-                        </button>
-                      </td>
+        {tipoRelatorio === 'frequencia' && (
+          <>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-4">Relatório de Frequência</h2>
+            <hr className='border-4 mb-3'></hr>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead className='border-2 border-y-black'>
+                  <tr className="bg-gray-200 text-sm md:text-2lg">
+                    <th className="px-2 md:px-4 py-2 text-left text-black">Nome Completo</th>
+                    {frequencias.map(f => (
+                      <th key={f.data} className="text-1sm md:text-sm px-2 md:px-4 py-2 text-center text-black">{f.data}</th>
+                    ))}
+                    <th className="px-2 md:px-4 py-2 text-center text-black">Percentual de Presença</th>
+                    <th className="px-2 md:px-4 py-2 text-center text-black">Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {alunos.length === 0 ? (
+                    <tr>
+                      <td colSpan={frequencias.length + 3} className="text-center text-black">Nenhum aluno encontrado.</td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        <br />
-        <br />
-        <br />
+                  ) : (
+                    alunos.map((aluno: Aluno) => {
+                      const totalAulas = frequencias.length;
+                      const aulasPresentes = frequencias.filter(f => aluno.frequencias[f.data]).length;
+                      const percentualPresenca = totalAulas > 0 ? (aulasPresentes / totalAulas) * 100 : 0;
+
+                      return (
+                        <tr key={aluno.id} className="border-t text-sm md:text-2lg">
+                          <td className="px-2 md:px-4 py-1 text-black">{aluno.nome}</td>
+                          {frequencias.map(f => (
+                            <td key={f.data} className="px-2 md:px-4 py-1 text-center text-black">
+                              <div className="flex justify-center items-end h-full">
+                                {aluno.frequencias[f.data] ? (
+                                  <UserIcon className="text-green-500 w-5 h-5" />
+                                ) : (
+                                  <XCircleIcon className="text-red-500 w-5 h-5" />
+                                )}
+                              </div>
+                            </td>
+                          ))}
+                          <td className="px-2 md:px-4 py-1 text-center text-black">{percentualPresenca.toFixed(2)}%</td>
+                          <td className="px-2 md:px-4 py-1 text-center text-black">
+                            <button
+                              onClick={() => handleEdit(aluno)}
+                              className="bg-purple-500 text-white rounded hover:bg-purple-700 p-1"
+                            >
+                              <PencilIcon className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {tipoRelatorio === 'conteudo' && (
+          <>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-4">Relatório de Conteúdo Diário</h2>
+            <hr className='border-4 mb-3'></hr>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead className='border-2 border-y-black'>
+                  <tr className="bg-gray-200 text-sm md:text-2lg">
+                    <th className="px-2 md:px-4 py-2 text-left text-black">Data</th>
+                    <th className="px-2 md:px-4 py-2 text-left text-black">Disciplina</th>
+                    <th className="px-2 md:px-4 py-2 text-left text-black">Professor</th>
+                    <th className="px-2 md:px-4 py-2 text-left text-black">Conteúdo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {frequencias.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center text-black">Nenhum conteúdo encontrado.</td>
+                    </tr>
+                  ) : (
+                    frequencias.map((frequencia: Frequencia) => (
+                      <tr key={frequencia.id} className="border-t text-sm md:text-2lg">
+                        <td className="px-2 md:px-4 py-1 text-black">{frequencia.data}</td>
+                        <td className="px-2 md:px-4 py-1 text-black">{frequencia.nomeDisciplina}</td>
+                        <td className="px-2 md:px-4 py-1 text-black">{frequencia.nomeProfessor}</td>
+                        <td className="px-2 md:px-4 py-1 text-black">{frequencia.conteudoDiario}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {turmaSelecionada && (frequencias.length > 0 || alunos.length > 0) && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={generatePDF}
+              className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 focus:outline-none focus:bg-green-600 transition duration-150"
+            >
+              Gerar PDF
+            </button>
+          </div>
+        )}
       </div>
-      {/* Modal para edição pode ser adicionado aqui */}
       {isModalOpen && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen">
@@ -316,3 +448,4 @@ export default function Relatorios() {
     </div>
   );
 }
+

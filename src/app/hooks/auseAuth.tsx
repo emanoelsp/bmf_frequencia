@@ -6,7 +6,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 interface User {
   uid: string;
   email: string;
-  // Adicione outros campos que você espera no usuário
 }
 
 export const useAuth = () => {

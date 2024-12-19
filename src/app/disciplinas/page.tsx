@@ -1,0 +1,48 @@
+"use client";
+
+import { useAuth } from '../hooks/auseAuth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import LogOut from '../components/logout';
+import { BookOpenIcon, UserGroupIcon } from '@heroicons/react/24/solid';
+
+export default function Disciplinas() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  if (loading) return <p>Loading...</p>;
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-0 md:p-2">
+      <LogOut />
+      <hr />
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">Gerenciamento de Disciplinas e Professores</h1>
+
+      <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+          <BookOpenIcon className="h-12 w-12 text-blue-500 mb-4" />
+          <Link href="/disciplinas/cadastro">
+            <button className="bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-700 focus:outline-none focus:bg-blue-700 transition duration-150">
+              Cadastrar Disciplinas e Professores
+            </button>
+          </Link>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+          <UserGroupIcon className="h-12 w-12 text-green-600 mb-4" />
+          <Link href="/disciplinas/relatorio">
+            <button className="bg-green-600 text-white py-3 px-6 rounded hover:bg-green-800 focus:outline-none focus:bg-green-800 transition duration-150">
+              Relatórios de Disciplinas e Professores
+            </button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+

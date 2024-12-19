@@ -21,16 +21,25 @@ interface Turma {
   codigoTurma: string;
 }
 
+interface Disciplina {
+  id: string;
+  nomeDisciplina: string;
+  nomeProfessor: string;
+}
+
 export default function RelatorioTurmasFrequencia() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [turmaSelecionada, setTurmaSelecionada] = useState<string>('');
+  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<string>('');
   const [data, setData] = useState<string>('');
   const [presenca, setPresenca] = useState<{ [key: string]: boolean }>({});
-  const [turmaDetalhes, setTurmaDetalhes] = useState<Turma | null>(null); // Novo estado para detalhes da turma
+  const [turmaDetalhes, setTurmaDetalhes] = useState<Turma | null>(null);
+  const [conteudoDiario, setConteudoDiario] = useState('');
   
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | null }>({
     message: '',
@@ -53,7 +62,18 @@ export default function RelatorioTurmasFrequencia() {
       setTurmas(turmasData);
     };
 
+    const fetchDisciplinas = async () => {
+      const disciplinaCollectionRef = collection(firestore, 'disciplinas');
+      const disciplinaDocs = await getDocs(disciplinaCollectionRef);
+      const disciplinasData = disciplinaDocs.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Disciplina[];
+      setDisciplinas(disciplinasData);
+    };
+
     fetchTurmas();
+    fetchDisciplinas();
   }, [loading, user, router]);
 
   const handleTurmaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -62,7 +82,7 @@ export default function RelatorioTurmasFrequencia() {
 
     if (turmaId) {
       const selectedTurma = turmas.find(turma => turma.id === turmaId);
-      setTurmaDetalhes(selectedTurma || null); // Atualiza os detalhes da turma selecionada
+      setTurmaDetalhes(selectedTurma || null);
 
       const alunosQuery = query(collection(firestore, 'alunos'), where('turmaId', '==', turmaId));
       const alunosSnapshot = await getDocs(alunosQuery);
@@ -71,11 +91,10 @@ export default function RelatorioTurmasFrequencia() {
         ...doc.data(),
       })) as Aluno[];
 
-      // Ordena os alunos por nome
       alunosData.sort((a, b) => a.nome.localeCompare(b.nome));
 
       const presencaInicial = alunosData.reduce((acc, aluno) => {
-        acc[aluno.id] = true; // Marca todos como presentes
+        acc[aluno.id] = true;
         return acc;
       }, {} as { [key: string]: boolean });
 
@@ -84,22 +103,28 @@ export default function RelatorioTurmasFrequencia() {
     } else {
       setAlunos([]);
       setPresenca({});
-      setTurmaDetalhes(null); // Limpa os detalhes da turma se não houver turma
+      setTurmaDetalhes(null);
     }
   };
 
   const handleSalvarFrequencia = async () => {
-    if (!data || !turmaSelecionada) {
+    if (!data || !turmaSelecionada || !disciplinaSelecionada) {
       setNotification({
-        message: 'Por favor, preencha a data e selecione uma turma.',
+        message: 'Por favor, preencha todos os campos obrigatórios.',
         type: 'error',
       });
       return;
     }
 
+    const disciplina = disciplinas.find(d => d.id === disciplinaSelecionada);
+
     const frequenciaData = {
       turmaId: turmaSelecionada,
       data,
+      conteudoDiario,
+      disciplinaId: disciplinaSelecionada,
+      nomeDisciplina: disciplina?.nomeDisciplina,
+      nomeProfessor: disciplina?.nomeProfessor,
       alunos: alunos.map(aluno => ({
         nome: aluno.nome,
         turma: aluno.turmaId,
@@ -116,8 +141,10 @@ export default function RelatorioTurmasFrequencia() {
       setPresenca({});
       setData('');
       setTurmaSelecionada('');
+      setDisciplinaSelecionada('');
       setAlunos([]);
-      setTurmaDetalhes(null); // Limpa os detalhes da turma após salvar
+      setTurmaDetalhes(null);
+      setConteudoDiario('');
     } catch (error) {
       console.error('Erro ao salvar a frequência: ', error);
       setNotification({
@@ -144,9 +171,8 @@ export default function RelatorioTurmasFrequencia() {
     <div className="min-h-screen bg-gray-100 p-0 md:p-2 relative">
       <LogOut />
       <hr />
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">Cadastrar frequência dos alunos</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-8 mt-2">Cadastrar frequência e conteúdos</h1>
 
-      {/* Notificação */}
       {notification.message && (
         <div className={`fixed top-4 right-4 p-4 rounded shadow-lg text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
           {notification.message}
@@ -185,13 +211,49 @@ export default function RelatorioTurmasFrequencia() {
           />
         </div>
         
-        {/* Exibe os detalhes da turma e data selecionada */}
-        {turmaDetalhes && data && (
+        {turmaSelecionada && (
+          <>
+            <div className="mb-6">
+              <h2 className="text-1lg md:text-lg font-semibold text-gray-700 mb-4">Selecione a disciplina/professor:</h2>
+              <select
+                id="disciplina"
+                value={disciplinaSelecionada}
+                onChange={(e) => setDisciplinaSelecionada(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecionar uma disciplina</option>
+                {disciplinas.map((disciplina) => (
+                  <option key={disciplina.id} value={disciplina.id} className="text-black">
+                    {disciplina.nomeDisciplina} - {disciplina.nomeProfessor}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {turmaSelecionada && data && disciplinaSelecionada && (
+          <div className="mb-6">
+            <h2 className="text-1lg md:text-lg font-semibold text-gray-700 mb-4">Conteúdo diário da aula:</h2>
+            <textarea
+              id="conteudoDiario"
+              className="w-full text-1lg md:text-lg p-3 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={conteudoDiario}
+              onChange={(e) => setConteudoDiario(e.target.value)}
+              rows={4}
+              placeholder="Digite o conteúdo da aula..."
+            ></textarea>
+          </div>
+        )}
+
+        {turmaDetalhes && data && disciplinaSelecionada && (
           <div className="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
             <h3 className="font-bold">Detalhes da Frequência: </h3>
             <p>Escola: {turmaDetalhes.nomeEscola}</p>
             <p>Turma: {turmaDetalhes.anoTurma} - {turmaDetalhes.codigoTurma}</p>
             <p>Data: {data}</p>
+            <p>Disciplina: {disciplinas.find(d => d.id === disciplinaSelecionada)?.nomeDisciplina}</p>
+            <p>Professor: {disciplinas.find(d => d.id === disciplinaSelecionada)?.nomeProfessor}</p>
           </div>
         )}
         
@@ -235,9 +297,7 @@ export default function RelatorioTurmasFrequencia() {
           </button>
         </div>
       </div>
-      <br />
-      <br />
-      <br />
     </div>
   );
 }
+
